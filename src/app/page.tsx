@@ -1,29 +1,115 @@
-"use client";
+import Link from "next/link";
+import { AddressForm } from "@/components/home/address-form";
+import { Preview } from "@/components/home/preview";
+import styles from "@/components/home/home.module.css";
 
-import { FormEvent, useMemo, useState } from "react";
+const FEATURES = [
+  {
+    title: "The facts, straight",
+    body: "Net P&L after fees, win rate, profit factor, drawdown, volume and streaks, all computed from the wallet's actual fills.",
+    icon: (
+      <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+    ),
+  },
+  {
+    title: "Habits, not just totals",
+    body: "See whether you size up after losses, which markets leak money, and which hours of the day hurt your results.",
+    icon: (
+      <path d="M12 8v4l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    ),
+  },
+  {
+    title: "Insights you can verify",
+    body: "Every observation states the numbers behind it. No generic coaching, and nothing invented beyond what the history shows.",
+    icon: (
+      <path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    ),
+  },
+];
 
-type Trade = { asset: string; direction: "Long" | "Short"; pnl: number; setup: string; emotion: string; rules: string };
+const STEPS = [
+  { title: "Paste an address", body: "Any wallet that trades perpetuals on Hyperliquid. No signup, no connection." },
+  { title: "We read the public history", body: "Fills, fees and realized P&L are pulled read-only from the exchange's public API." },
+  { title: "Get your review", body: "Grouped into closed trades and turned into metrics, charts and plain-language insights." },
+];
 
-export default function Home() {
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [asset, setAsset] = useState("");
-  const [pnl, setPnl] = useState("");
-  const [message, setMessage] = useState("No trade data yet. Log a trade to start your local journal.");
-  const stats = useMemo(() => {
-    const net = trades.reduce((sum, trade) => sum + trade.pnl, 0);
-    const wins = trades.filter((trade) => trade.pnl > 0).length;
-    const planned = trades.filter((trade) => trade.rules === "Followed plan").length;
-    return { net, wins, rate: trades.length ? (wins / trades.length) * 100 : 0, adherence: trades.length ? (planned / trades.length) * 100 : 0 };
-  }, [trades]);
-  const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", signDisplay: "always" }).format(value);
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const value = Number(pnl);
-    if (!asset.trim() || !Number.isFinite(value)) { setMessage("Add a ticker and a valid realized P&L."); return; }
-    setTrades((current) => [{ asset: asset.trim().toUpperCase(), direction: "Long", pnl: value, setup: "Breakout", emotion: "Calm", rules: "Followed plan" }, ...current]);
-    setAsset(""); setPnl(""); setMessage("Trade saved locally for this session. Analytics updated from your entry.");
-  }
-  return <main className="shell"><header><div className="brand">Journal<span>AI</span></div><p>Local-first trade intelligence</p></header><section className="hero"><div><span className="eyebrow">Trade journal</span><h1>Trade with evidence, not memory.</h1><p>{message}</p></div></section><section className="metrics" aria-label="Journal metrics"><Metric label="Net P&L" value={trades.length ? money(stats.net) : "—"} tone={stats.net >= 0 ? "positive" : "negative"}/><Metric label="Win rate" value={trades.length ? `${stats.rate.toFixed(1)}%` : "—"}/><Metric label="Rule adherence" value={trades.length ? `${stats.adherence.toFixed(1)}%` : "—"}/></section><section className="grid"><article className="card"><span className="eyebrow">Log a trade</span><h2>Capture the context.</h2><form onSubmit={submit}><label>Ticker<input value={asset} onChange={(event) => setAsset(event.target.value)} placeholder="e.g. NVDA" /></label><label>Realized P&L<input value={pnl} onChange={(event) => setPnl(event.target.value)} inputMode="decimal" placeholder="e.g. 245.50" /></label><button type="submit">Save & analyze</button></form></article><article className="card"><span className="eyebrow">Pattern review</span><h2>{trades.length ? "Evidence is accumulating." : "No invented coaching."}</h2><p>{trades.length ? `${stats.wins} of ${trades.length} recorded trades are profitable. Keep logging context to make the review more useful.` : "JournalAI only generates insights from your recorded trades. Import and persistence are the next features to add."}</p></article></section><section className="card table"><div><span className="eyebrow">Recent trades</span><h2>Execution history</h2></div>{trades.length ? <table><thead><tr><th>Asset</th><th>Side</th><th>Setup</th><th>P&L</th></tr></thead><tbody>{trades.map((trade, index) => <tr key={`${trade.asset}-${index}`}><td>{trade.asset}</td><td>{trade.direction}</td><td>{trade.setup}</td><td className={trade.pnl >= 0 ? "positive" : "negative"}>{money(trade.pnl)}</td></tr>)}</tbody></table> : <p className="empty">No trades recorded yet.</p>}</section></main>;
+export default function HomePage() {
+  return (
+    <>
+      <section className={styles.hero}>
+        <div className={`container ${styles.heroInner}`}>
+          <span className={styles.pill}>
+            <i /> Read-only. Works from public data
+          </span>
+          <h1 className={styles.title}>
+            Understand your trading, <em>from a wallet address.</em>
+          </h1>
+          <p className={styles.lede}>
+            Paste any wallet and get a clear review of its trading history: what it made, what it paid, and the habits
+            behind the results.
+          </p>
+          <div className={styles.formWrap}>
+            <AddressForm />
+            <p className={styles.hint}>
+              No address handy? <Link href="/demo">Explore a sample report</Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className={`container ${styles.previewSection}`} aria-label="Report preview">
+        <Preview />
+      </section>
+
+      <section className={`container ${styles.section}`}>
+        <div className={styles.sectionHead}>
+          <p className={styles.eyebrow}>What you get</p>
+          <h2 className={styles.sectionTitle}>A trade journal that writes itself.</h2>
+        </div>
+        <div className={styles.grid3}>
+          {FEATURES.map((feature) => (
+            <article className={styles.feature} key={feature.title}>
+              <div className={styles.featureIcon}>
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                  {feature.icon}
+                </svg>
+              </div>
+              <h3>{feature.title}</h3>
+              <p>{feature.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={`container ${styles.section}`}>
+        <div className={styles.sectionHead}>
+          <p className={styles.eyebrow}>How it works</p>
+          <h2 className={styles.sectionTitle}>From address to insight in seconds.</h2>
+        </div>
+        <div className={`${styles.grid3} ${styles.steps}`}>
+          {STEPS.map((step) => (
+            <div className={styles.step} key={step.title}>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={`container ${styles.section}`}>
+        <div className={styles.privacy}>
+          <div>
+            <h2>Nothing to connect. Nothing to sign.</h2>
+            <p>
+              JournalAI only reads what is already public. We never request wallet access, signatures or API keys, and
+              we can&apos;t move your funds.
+            </p>
+          </div>
+          <Link href="/demo" className={styles.cta}>
+            View sample report
+          </Link>
+        </div>
+      </section>
+    </>
+  );
 }
-
-function Metric({ label, value, tone = "" }: { label: string; value: string; tone?: string }) { return <article className="metric"><span>{label}</span><strong className={tone}>{value}</strong><small>Calculated from your entries</small></article>; }
