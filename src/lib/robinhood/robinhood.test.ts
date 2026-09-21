@@ -86,6 +86,38 @@ describe("Robinhood Chain adapter", () => {
     expect(data.fills.find((fill) => fill.dir === "Close Long")?.closedPnl).toBeCloseTo(1000);
   });
 
+  it("cuts every dataset to the moment the busiest one was capped, so swaps stay whole", async () => {
+    vi.stubEnv("ETHERSCAN_API_KEY", "key");
+    const base = Date.parse("2026-08-01T00:00:00Z") / 1000;
+    // 3,000 plain transactions fill txlist to its cap, ending at base + 2,999s.
+    const filler = Array.from({ length: 3000 }, (_, i) => ({
+      hash: `0xfill${i}`, from: me, to: router, value: "0", isError: "0", timeStamp: String(base + i), gasUsed: "0", gasPrice: "0", blockNumber: String(i + 1),
+    }));
+    const swap = (hash: string, at: number) => [
+      { hash, from: me, to: router, contractAddress: "0xusdc", tokenSymbol: "USDC", tokenDecimal: "6", value: "100000000", timeStamp: String(at), blockNumber: "1" },
+      { hash, from: router, to: me, contractAddress: "0xxyz", tokenSymbol: "XYZ", tokenDecimal: "18", value: "10000000000000000000", timeStamp: String(at), blockNumber: "1" },
+    ];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.startsWith("https://api.coingecko.com")) return json({ prices: [[base * 1000, 2000]] });
+        const params = new URL(url).searchParams;
+        if (params.get("action") === "txlist") {
+          const page = Number(params.get("page"));
+          return ok(filler.slice((page - 1) * 1000, page * 1000));
+        }
+        // One swap inside the covered window and one after it, where the gas records no longer reach.
+        return ok(params.get("action") === "tokentx" ? [...swap("0xearly", base + 100), ...swap("0xlate", base + 5000)] : []);
+      }),
+    );
+
+    const data = await loadRobinhood(me);
+
+    expect(data.truncated).toBe(true);
+    expect(data.fills.some((fill) => fill.orderId === "0xearly")).toBe(true);
+    expect(data.fills.some((fill) => fill.orderId === "0xlate")).toBe(false);
+  });
+
   it("returns an empty history for a wallet with no activity", async () => {
     vi.stubEnv("ETHERSCAN_API_KEY", "key");
     stubEtherscan({});

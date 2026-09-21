@@ -25,7 +25,7 @@
 
 .brand span { color: var(--accent-strong); }
 
-.nav { display: flex; align-items: center; gap: 4px; }
+.nav { display: flex; align-items: center; gap: 2px; }
 
 .navLink {
   padding: 7px 12px;
@@ -33,6 +33,7 @@
   color: var(--muted);
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
   transition: color 0.15s, background-color 0.15s;
 }
 
@@ -55,3 +56,8 @@
 
 .footer p { max-width: 640px; line-height: 1.6; }
 .footer strong { color: var(--muted); font-weight: 500; }
+
+@media (max-width: 480px) {
+  .navLink { padding: 7px 8px; font-size: 13px; }
+  .brand { font-size: 16px; gap: 8px; }
+}

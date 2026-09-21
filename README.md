@@ -24,6 +24,20 @@ pnpm dev
 
 Open http://localhost:3000. Use **Sample report** to explore without an address.
 
+## Sharing and comparing
+
+- **Share cards.** Every wallet report has a generated 1200x630 card (net P&L, win rate, profit factor, equity curve)
+  used as the link preview when the page is shared. **Share card** opens a preview of the exact image first, with a
+  download button inside it, and there is a **Copy link** button too. The image is only generated once the preview is
+  opened. The card lives at
+  `/wallet/[address]/opengraph-image`, and falls back to a branded card if the wallet cannot be loaded. Set
+  `NEXT_PUBLIC_SITE_URL` in production so preview image URLs point at your public origin.
+- **Compare wallets.** `/compare?a=0x...&b=0x...` puts two wallets side by side: a metric table with the better value
+  marked, overlaid equity curves on a shared timeline, head-to-head sentences, shared markets, and each wallet's top
+  insights. Raw P&L favours whichever wallet trades more capital, so the table also scores **net P&L per dollar
+  traded**, and the verdict calls out when the wallet that made more is not the one that traded better. The
+  identifiers `demo` and `demo-2` compare the two generated sample wallets without an API key.
+
 | Script           | Purpose                    |
 | ---------------- | -------------------------- |
 | `pnpm dev`       | Start the dev server       |
@@ -49,7 +63,11 @@ P&L uses average cost. Gas is included as a fee. Things to know:
 - Sales with no earlier purchase in the visible history have no cost basis and are left out.
 - Tokens are matched by symbol, so a counterfeit token named like a stablecoin would be valued as one.
 - Only realized P&L is shown. Unrealized gains on open positions are not included.
-- History is capped at three pages of 10,000 rows per data type, and the report says when it is cut off.
+- History is capped at 3,000 rows per data type, oldest first. Etherscan rows can be very large (a transaction row
+  carries its full calldata), so an uncapped load of a busy wallet takes a minute. When any dataset hits the cap, every
+  dataset is cut to the same moment so swaps stay whole, and the report says so. Normal wallets are complete.
+- Reports are cached in memory by address for five minutes. Next's own fetch cache is not used for Etherscan, because
+  it is keyed by URL and the URL contains your API key.
 
 ## Private journal
 
@@ -74,16 +92,19 @@ src/
     page.tsx              Landing page with the address form
     wallet/[address]/     Wallet report (page, loading, error)
     journal/              Private local journal
+    compare/              Side by side comparison of two wallets
     demo/                 Report for generated sample data
   components/
     layout/               Header and footer
     home/                 Address form and landing sections
     journal/              Trade form, CSV import, behaviour analysis (client side)
     report/               Stat cards, charts, tables, insights
+    compare/              Comparison form, overlaid chart, metric table
+    share/                Share card image and share buttons
     ui/                   Small shared primitives
   lib/
     robinhood/            Etherscan client, ETH prices, swap reconstruction
-    analytics/            Fills -> trades -> metrics -> insights
+    analytics/            Fills -> trades -> metrics -> insights, and wallet comparison
     journal/              Entry types, storage, CSV parser, behaviour patterns
     demo/                 Deterministic sample data generator
     report.ts             Loads a wallet or the demo into a WalletReport

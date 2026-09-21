@@ -13,6 +13,9 @@ export function SiteHeader() {
           </div>
         </Link>
         <nav className={styles.nav} aria-label="Primary">
+          <Link href="/compare" className={styles.navLink}>
+            Compare
+          </Link>
           <Link href="/journal" className={styles.navLink}>
             Journal
           </Link>

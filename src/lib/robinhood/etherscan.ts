@@ -4,22 +4,40 @@ const BASE = "https://api.etherscan.io/v2/api";
 export const ROBINHOOD_CHAIN_ID = 4663;
 
 const PAGE_SIZE = 1000;
-/** Etherscan serves at most 10,000 rows per query window (page x offset). */
-const PAGES_PER_WINDOW = 10;
-const MAX_WINDOWS = 3;
+/**
+ * History is capped per data type. Etherscan rows can be huge (a transaction
+ * row carries its full calldata, often 15KB), so an unbounded load of a busy
+ * wallet takes a minute and hundreds of megabytes. Three pages keeps a normal
+ * wallet complete and a bot wallet bounded.
+ */
+const MAX_PAGES = 3;
 const CALL_GAP_MS = 250;
+
+// Every Etherscan call in this process goes through one queue, so two wallets
+// loading at once (a comparison, or a page plus its share card) stay inside
+// the free tier's rate limit instead of each pacing itself separately.
+let nextSlot = 0;
+async function throttle() {
+  const now = Date.now();
+  const wait = Math.max(0, nextSlot - now);
+  nextSlot = Math.max(now, nextSlot) + CALL_GAP_MS;
+  if (wait) await sleep(wait);
+}
 
 export type Row = Record<string, string>;
 export type EtherscanAction = "txlist" | "txlistinternal" | "tokentx";
 
 async function request(params: Record<string, string>, attempt = 0): Promise<Row[]> {
+  await throttle();
   const key = process.env.ETHERSCAN_API_KEY;
   if (!key) throw new SourceError("Robinhood Chain needs an Etherscan API key. Set ETHERSCAN_API_KEY on the server.");
 
   const query = new URLSearchParams({ chainid: String(ROBINHOOD_CHAIN_ID), module: "account", apikey: key, ...params });
   let response: Response;
   try {
-    response = await fetch(`${BASE}?${query}`, { next: { revalidate: 300 } });
+    // Not cached by Next: responses can exceed its 2MB limit, and its cache logs the full URL, API key included.
+    // Finished reports are cached in memory by address instead (see report.ts).
+    response = await fetch(`${BASE}?${query}`, { cache: "no-store" });
   } catch {
     throw new SourceError("Could not reach Etherscan. Check your connection and try again.");
   }
@@ -42,40 +60,25 @@ async function request(params: Record<string, string>, attempt = 0): Promise<Row
   throw new SourceError(`Etherscan could not return this wallet's history: ${detail || "unknown error"}.`);
 }
 
-/** Pages through every row for one action, oldest first, moving the start block when a window fills. */
+/** Pages through one action's rows, oldest first, up to the cap. */
 export async function fetchAll(action: EtherscanAction, address: string): Promise<{ rows: Row[]; truncated: boolean }> {
-  let rows: Row[] = [];
-  let startblock = 0;
-  let truncated = false;
+  const rows: Row[] = [];
+  let full = false;
 
-  for (let window = 0; window < MAX_WINDOWS; window++) {
-    const batch: Row[] = [];
-    let lastPageFull = false;
-
-    for (let page = 1; page <= PAGES_PER_WINDOW; page++) {
-      if (window > 0 || page > 1) await sleep(CALL_GAP_MS);
-      const result = await request({
-        action,
-        address,
-        startblock: String(startblock),
-        endblock: "99999999999",
-        page: String(page),
-        offset: String(PAGE_SIZE),
-        sort: "asc",
-      });
-      batch.push(...result);
-      lastPageFull = result.length >= PAGE_SIZE;
-      if (!lastPageFull) break;
-    }
-
-    // A new window restarts at the last block seen, so drop that block's rows first to avoid duplicates.
-    if (window > 0) rows = rows.filter((row) => row.blockNumber !== String(startblock));
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const batch = await request({
+      action,
+      address,
+      startblock: "0",
+      endblock: "99999999999",
+      page: String(page),
+      offset: String(PAGE_SIZE),
+      sort: "asc",
+    });
     rows.push(...batch);
-
-    if (!lastPageFull) return { rows, truncated: false };
-    startblock = Number(batch[batch.length - 1].blockNumber);
-    truncated = true;
+    full = batch.length >= PAGE_SIZE;
+    if (!full) break;
   }
 
-  return { rows, truncated };
+  return { rows, truncated: full };
 }

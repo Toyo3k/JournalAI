@@ -33,6 +33,8 @@ interface ReportViewProps {
   report: WalletReport;
   /** Shown top right, for example the search form. Passed in so this view stays usable from client components. */
   right?: React.ReactNode;
+  /** Shown under the wallet identity, for example share buttons. */
+  actions?: React.ReactNode;
   /** Hide the identity header when the page supplies its own. */
   hideHeader?: boolean;
   /** Hide the recent trades table when the page shows a richer one. */
@@ -43,7 +45,7 @@ interface ReportViewProps {
 
 const BADGES = { demo: "Sample data", journal: "Local journal", robinhood: "Robinhood Chain" } as const;
 
-export function ReportView({ report, right, hideHeader = false, hideRecent = false, extra }: ReportViewProps) {
+export function ReportView({ report, right, actions, hideHeader = false, hideRecent = false, extra }: ReportViewProps) {
   const { summary, capabilities, subject } = report;
   const isDemo = report.source === "demo";
   const empty = summary.fillCount === 0;
@@ -70,6 +72,7 @@ export function ReportView({ report, right, hideHeader = false, hideRecent = fal
               {formatDate(summary.lastFillAt)}
             </p>
           ) : null}
+          {actions}
         </div>
         {right ? <div className={`${styles.search} no-print`}>{right}</div> : null}
       </div>}
@@ -81,7 +84,7 @@ export function ReportView({ report, right, hideHeader = false, hideRecent = fal
       ) : null}
       {report.truncated ? (
         <p className={styles.notice} data-tone="warn">
-          This history is longer than the source will return, so the figures below cover only part of it.
+          This wallet has more activity than we load at once, so the figures below cover its earliest transactions only, up to {formatDate(summary.lastFillAt)}.
         </p>
       ) : null}
       {report.notes.map((note) => (
@@ -94,8 +97,8 @@ export function ReportView({ report, right, hideHeader = false, hideRecent = fal
         <section className={`${styles.card} ${styles.emptyState}`}>
           <h2>No trading history found</h2>
           <p>
-            Nothing was found for {subject.label} on {sourceLabel}. Check that you chose the right source and, for
-            addresses, that you pasted the wallet used to trade rather than a deposit or contract address.
+            Nothing was found for {subject.label} on {sourceLabel}. Check that you pasted the wallet used to trade,
+            rather than a deposit or contract address.
           </p>
           <Link href="/demo" className={styles.link}>
             See a sample report

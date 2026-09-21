@@ -1,0 +1,112 @@
+.page { padding-block: 40px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+
+.head h1 { font-size: clamp(26px, 3.6vw, 36px); line-height: 1.12; letter-spacing: -0.03em; font-weight: 630; }
+.head p { margin-top: 8px; color: var(--muted); max-width: 620px; }
+
+/* Form */
+.form { display: grid; gap: 14px; }
+.inputs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: end; }
+.field { display: grid; gap: 6px; }
+.field label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; font-weight: 500; }
+.field label i, .walletHead i, .legendItem i, .insightTitle i, .tipRow i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+.field[data-side="a"] label i, .walletCard[data-side="a"] i, .insightTitle[data-side="a"] i { background: var(--series-a); }
+.field[data-side="b"] label i, .walletCard[data-side="b"] i, .insightTitle[data-side="b"] i { background: var(--series-b); }
+.field input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+.field input::placeholder { color: var(--dim); }
+.field input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.swap {
+  height: 46px;
+  width: 46px;
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 18px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.swap:hover { color: var(--text); border-color: var(--accent); }
+.error { color: var(--loss); font-size: 13.5px; }
+.formActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.primary, .ghost {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.primary { background: var(--accent); color: #0b0d1a; }
+.primary:hover:not(:disabled) { background: var(--accent-strong); }
+.primary:disabled { opacity: 0.75; cursor: progress; }
+.ghost { background: transparent; border-color: var(--border-strong); color: var(--text-2); }
+.ghost:hover { color: var(--text); border-color: var(--accent); }
+
+/* Wallet cards */
+.walletCards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.walletCard {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--series-a);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.walletCard[data-side="b"] { border-top-color: var(--series-b); }
+.walletHead { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 500; }
+.walletHead em { font-style: normal; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); font-size: 11.5px; font-weight: 600; }
+.walletCard strong { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; }
+.walletMeta { color: var(--dim); font-size: 13px; }
+
+/* Verdict */
+.verdict { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.verdict li {
+  position: relative;
+  padding-left: 20px;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.verdict li::before { content: ""; position: absolute; left: 0; top: 0.65em; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+
+/* Chart */
+.chartWrap { display: grid; gap: 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; color: var(--text-2); font-size: 13.5px; }
+.legendItem { display: inline-flex; align-items: center; gap: 8px; }
+.plot { position: relative; height: 320px; cursor: crosshair; touch-action: pan-y; }
+.tipRow { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+
+/* Metrics */
+.metrics { min-width: 420px; }
+.metrics th[scope="row"] { color: var(--text-2); font-weight: 500; }
+/* Doubled up to beat the shared table's own alignment rules regardless of stylesheet order. */
+table.metrics th:not(:first-child), table.metrics td { text-align: right; }
+.colA { box-shadow: inset 0 -2px 0 var(--series-a); }
+.colB { box-shadow: inset 0 -2px 0 var(--series-b); }
+.metrics td[data-winner="true"] { background: var(--accent-soft); font-weight: 600; }
+.better { margin-left: 8px; color: var(--gain); font-size: 12px; }
+
+.insightCols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.insightTitle { display: inline-flex; align-items: center; gap: 9px; }
+.insightCols ul { grid-template-columns: 1fr; }
+
+@media (max-width: 860px) {
+  .insightCols { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .inputs { grid-template-columns: 1fr; }
+  .swap { width: 100%; height: 38px; transform: rotate(90deg); justify-self: center; width: 46px; }
+  .walletCards { grid-template-columns: 1fr; }
+}

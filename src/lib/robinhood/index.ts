@@ -56,7 +56,17 @@ export async function loadRobinhood(address: string): Promise<SourceData> {
   const internal = await fetchAll("txlistinternal", address);
   const tokens = await fetchAll("tokentx", address);
 
-  const { transfers, gas } = toTransfers(address, normal.rows, internal.rows, tokens.rows);
+  const all = toTransfers(address, normal.rows, internal.rows, tokens.rows);
+
+  // When a dataset hit its cap, it only reaches back to some moment. Rows from the other
+  // datasets after that moment would be missing their counterparts (an ETH leg, or the gas
+  // paid), so everything is cut to the earliest of those moments to keep swaps whole.
+  const cutoffs = [normal, internal, tokens]
+    .filter((set) => set.truncated && set.rows.length)
+    .map((set) => num(set.rows[set.rows.length - 1].timeStamp) * 1000);
+  const cutoff = cutoffs.length ? Math.min(...cutoffs) : Number.POSITIVE_INFINITY;
+  const transfers = all.transfers.filter((transfer) => transfer.time < cutoff);
+  const gas = all.gas.filter((cost) => cost.time < cutoff);
   const capabilities = { shorts: false, fees: true };
   if (!transfers.length && !gas.length) return { fills: [], capabilities };
 

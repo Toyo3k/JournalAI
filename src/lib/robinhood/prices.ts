@@ -19,6 +19,7 @@ export function makePriceLookup(points: PricePoint[]): (ms: number) => number {
 }
 
 const ONE_DAY_MS = 86_400_000;
+const ONE_HOUR_MS = 3_600_000;
 
 /**
  * ETH/USD history from CoinGecko. One range request covers the whole wallet
@@ -26,8 +27,11 @@ const ONE_DAY_MS = 86_400_000;
  * transfers carry no prices, so this is what turns ETH legs into dollars.
  */
 export async function fetchEthUsd(fromMs: number, toMs: number): Promise<(ms: number) => number> {
-  const from = Math.floor((fromMs - ONE_DAY_MS) / 1000);
-  const to = Math.ceil(toMs / 1000);
+  // The window is rounded to whole days and hours so the request URL repeats
+  // and Next's fetch cache can serve it, instead of hitting the rate-limited
+  // price API with a unique URL on every report.
+  const from = Math.floor(Math.floor((fromMs - ONE_DAY_MS) / ONE_DAY_MS) * (ONE_DAY_MS / 1000));
+  const to = Math.ceil(toMs / ONE_HOUR_MS) * (ONE_HOUR_MS / 1000);
   const headers: Record<string, string> = { accept: "application/json" };
   if (process.env.COINGECKO_API_KEY) headers["x-cg-demo-api-key"] = process.env.COINGECKO_API_KEY;
 

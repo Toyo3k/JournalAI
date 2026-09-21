@@ -18,6 +18,8 @@
   --loss-soft: rgb(244 113 116 / 0.12);
   --caution: #f2b84b;
   --caution-soft: rgb(242 184 75 / 0.12);
+  --series-a: #8592ff;
+  --series-b: #f08bc4;
   --radius: 14px;
   --radius-sm: 9px;
   --container: 1180px;
@@ -106,6 +108,8 @@ table { border-collapse: collapse; width: 100%; }
     --gain: #0f8a5f;
     --loss: #c4363b;
     --caution: #a86b00;
+    --series-a: #4a56d6;
+    --series-b: #c2337f;
     color-scheme: light;
   }
 
