@@ -1,20 +1,25 @@
+import { isValidAddress } from "./address";
 import { buildReport } from "./analytics";
-import type { WalletReport } from "./analytics";
+import type { Subject, WalletReport } from "./analytics/types";
 import { generateDemoFills } from "./demo/generate";
-import { fetchAccount, fetchFills } from "./hyperliquid/client";
+import { shortenAddress } from "./format";
+import { loadRobinhood } from "./robinhood";
 
 export const DEMO_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678";
 
+const toSubject = (address: string): Subject => ({ id: address, label: shortenAddress(address), kind: "address" });
+
 export async function loadWalletReport(address: string): Promise<WalletReport> {
-  const [{ fills, truncated }, account] = await Promise.all([fetchFills(address), fetchAccount(address)]);
-  return buildReport({ address, source: "hyperliquid", fills, truncated, account });
+  if (!isValidAddress(address)) throw new Error("loadWalletReport expects a validated address.");
+  const data = await loadRobinhood(address);
+  return buildReport({ subject: toSubject(address), source: "robinhood", ...data });
 }
 
 export function loadDemoReport(): WalletReport {
   return buildReport({
-    address: DEMO_ADDRESS,
+    subject: toSubject(DEMO_ADDRESS),
     source: "demo",
     fills: generateDemoFills(),
-    account: { accountValue: 48_250, openPositions: 2 },
+    capabilities: { shorts: false, fees: true },
   });
 }

@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { AddressForm } from "@/components/home/address-form";
 import type { WalletReport } from "@/lib/analytics/types";
-import { formatDate, formatPercent, formatRatio, formatUsd, pluralise, shortenAddress } from "@/lib/format";
+import { formatDate, formatPercent, formatRatio, formatUsd, pluralise } from "@/lib/format";
 import { BarChart } from "./bar-chart";
 import { EquityChart } from "./equity-chart";
 import { InsightsPanel } from "./insights-panel";
@@ -30,24 +29,39 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export function ReportView({ report }: { report: WalletReport }) {
-  const { summary, account } = report;
+interface ReportViewProps {
+  report: WalletReport;
+  /** Shown top right, for example the search form. Passed in so this view stays usable from client components. */
+  right?: React.ReactNode;
+  /** Hide the identity header when the page supplies its own. */
+  hideHeader?: boolean;
+  /** Hide the recent trades table when the page shows a richer one. */
+  hideRecent?: boolean;
+  /** Extra sections shown after the insights. */
+  extra?: React.ReactNode;
+}
+
+const BADGES = { demo: "Sample data", journal: "Local journal", robinhood: "Robinhood Chain" } as const;
+
+export function ReportView({ report, right, hideHeader = false, hideRecent = false, extra }: ReportViewProps) {
+  const { summary, capabilities, subject } = report;
   const isDemo = report.source === "demo";
   const empty = summary.fillCount === 0;
+  const sourceLabel = BADGES[report.source];
 
   return (
-    <div className={`container ${styles.page}`}>
-      <div className={styles.top}>
+    <div className={`container ${styles.page} ${hideHeader ? styles.flush : ""}`}>
+      {hideHeader ? null : <div className={styles.top}>
         <div>
-          <Link href="/" className={styles.back}>
+          <Link href="/" className={`${styles.back} no-print`}>
             ← New wallet
           </Link>
           <div className={styles.identity}>
-            <h1 className={`mono ${styles.address}`} title={report.address}>
-              {shortenAddress(report.address)}
+            <h1 className={`mono ${styles.address}`} title={subject.id}>
+              {subject.label}
             </h1>
             <span className={styles.badge} data-kind={isDemo ? "demo" : "live"}>
-              {isDemo ? "Sample data" : "Hyperliquid"}
+              {sourceLabel}
             </span>
           </div>
           {!empty ? (
@@ -57,10 +71,8 @@ export function ReportView({ report }: { report: WalletReport }) {
             </p>
           ) : null}
         </div>
-        <div className={styles.search}>
-          <AddressForm variant="compact" initialValue={isDemo ? "" : report.address} />
-        </div>
-      </div>
+        {right ? <div className={`${styles.search} no-print`}>{right}</div> : null}
+      </div>}
 
       {isDemo ? (
         <p className={styles.notice} data-tone="info">
@@ -69,16 +81,21 @@ export function ReportView({ report }: { report: WalletReport }) {
       ) : null}
       {report.truncated ? (
         <p className={styles.notice} data-tone="warn">
-          This wallet has more history than the exchange exposes. The figures below cover its most recent fills only.
+          This history is longer than the source will return, so the figures below cover only part of it.
         </p>
       ) : null}
+      {report.notes.map((note) => (
+        <p className={styles.notice} data-tone="info" key={note}>
+          {note}
+        </p>
+      ))}
 
       {empty ? (
         <section className={`${styles.card} ${styles.emptyState}`}>
           <h2>No trading history found</h2>
           <p>
-            This address has no fills on Hyperliquid. Check that you pasted the wallet used to trade, not a deposit or
-            smart-contract address. Activity on other venues is not covered yet.
+            Nothing was found for {subject.label} on {sourceLabel}. Check that you chose the right source and, for
+            addresses, that you pasted the wallet used to trade rather than a deposit or contract address.
           </p>
           <Link href="/demo" className={styles.link}>
             See a sample report
@@ -90,9 +107,9 @@ export function ReportView({ report }: { report: WalletReport }) {
             <StatCard
               label="Net realized P&L"
               value={formatUsd(summary.netPnl, { signed: true })}
-              note={`After ${formatUsd(summary.fees, { compact: true })} in fees`}
+              note={capabilities.fees ? `After ${formatUsd(summary.fees, { compact: true })} in fees` : "Fees not itemised"}
               tone={summary.netPnl >= 0 ? "gain" : "loss"}
-              hint="Closed P&L minus all trading fees. Unrealized gains on open positions are not included."
+              hint="Closed P&L minus trading fees where the source reports them. Unrealized gains on open positions are not included."
             />
             <StatCard
               label="Win rate"
@@ -117,7 +134,7 @@ export function ReportView({ report }: { report: WalletReport }) {
           </div>
 
           <div className={styles.twoCol}>
-            <Section title="Equity curve" subtitle="Cumulative realized P&L after fees">
+            <Section title="Equity curve" subtitle={capabilities.fees ? "Cumulative realized P&L after fees" : "Cumulative realized P&L"}>
               <EquityChart points={report.equity} />
             </Section>
             <Section title="By the numbers">
@@ -128,31 +145,28 @@ export function ReportView({ report }: { report: WalletReport }) {
                 <Fact label="Best trade" value={summary.best ? <span className="pos">{formatUsd(summary.best.pnl, { signed: true })} {summary.best.coin}</span> : "n/a"} />
                 <Fact label="Worst trade" value={summary.worst ? <span className="neg">{formatUsd(summary.worst.pnl, { signed: true })} {summary.worst.coin}</span> : "n/a"} />
                 <Fact label="Longest streaks" value={`${summary.longestWinStreak} wins, ${summary.longestLossStreak} losses`} />
-                <Fact label="Maker fills" value={formatPercent(summary.makerShare, 0)} />
-                {account ? (
-                  <>
-                    <Fact label="Account value" value={formatUsd(account.accountValue, { compact: true })} />
-                    <Fact label="Open positions" value={account.openPositions} />
-                  </>
-                ) : null}
+                {capabilities.fees ? <Fact label="Fees paid" value={formatUsd(summary.fees, { compact: true })} /> : null}
               </dl>
             </Section>
           </div>
 
           <Section
             title="Insights"
-            subtitle="Patterns found in this wallet's own history. Each one cites the figures it is based on."
+            subtitle="Patterns found in this trading history. Each one cites the figures it is based on."
           >
             <InsightsPanel insights={report.insights} />
           </Section>
 
-          <div className={styles.twoCol}>
+          {extra}
+
+          <div className={capabilities.shorts ? styles.twoCol : undefined}>
             <Section title="When it trades" subtitle="Net P&L by hour of day and weekday, in UTC">
               <div className={styles.stack}>
                 <BarChart buckets={report.hours} labelEvery={3} caption="Net profit and loss by hour of day in UTC" />
                 <BarChart buckets={report.weekdays} caption="Net profit and loss by weekday" />
               </div>
             </Section>
+            {capabilities.shorts ? (
             <Section title="Long vs short">
               <div className={styles.sides}>
                 {report.sides.map((side) => (
@@ -166,15 +180,18 @@ export function ReportView({ report }: { report: WalletReport }) {
                 ))}
               </div>
             </Section>
+            ) : null}
           </div>
 
-          <Section title="Markets" subtitle="Ranked by traded volume">
+          <Section title={capabilities.shorts ? "Markets" : "Tokens"} subtitle="Ranked by traded volume">
             <AssetTable assets={report.assets} />
           </Section>
 
-          <Section title="Recent trades" subtitle="Latest closed trades, newest first">
-            <TradesTable trades={report.recentTrades} />
-          </Section>
+          {hideRecent ? null : (
+            <Section title="Recent trades" subtitle="Latest closed trades, newest first">
+              <TradesTable trades={report.recentTrades} />
+            </Section>
+          )}
         </>
       )}
     </div>

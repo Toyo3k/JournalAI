@@ -1,7 +1,7 @@
 const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 
 export function isValidAddress(value: string): boolean {
-  return EVM_ADDRESS.test(value);
+  return EVM_ADDRESS.test(value.trim());
 }
 
 /** Addresses are case-insensitive, so lowercase gives stable URLs and cache keys. */

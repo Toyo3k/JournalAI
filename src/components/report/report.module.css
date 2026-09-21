@@ -1,4 +1,5 @@
-.page { padding-block: 40px 0; display: grid; gap: 18px; }
+.page { padding-block: 40px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.flush { padding-top: 0; }
 
 .top {
   display: flex;

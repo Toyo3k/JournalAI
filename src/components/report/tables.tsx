@@ -23,7 +23,7 @@ export function AssetTable({ assets }: { assets: AssetStat[] }) {
               <th scope="row" className={styles.coin}>{asset.coin}</th>
               <td className={`${styles.right} num`}>{asset.trades}</td>
               <td className={`${styles.right} num`}>{asset.trades ? formatPercent(asset.winRate, 0) : "n/a"}</td>
-              <td className={`${styles.right} num`}>{formatUsd(asset.volume, { compact: true })}</td>
+              <td className={`${styles.right} num`}>{asset.volume > 0 ? formatUsd(asset.volume, { compact: true }) : "n/a"}</td>
               <td className={styles.right}>
                 <span className={styles.pnlCell}>
                   <span className={styles.miniBar} aria-hidden="true">

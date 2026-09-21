@@ -13,6 +13,9 @@ export function SiteHeader() {
           </div>
         </Link>
         <nav className={styles.nav} aria-label="Primary">
+          <Link href="/journal" className={styles.navLink}>
+            Journal
+          </Link>
           <Link href="/demo" className={styles.navLink}>
             Sample report
           </Link>

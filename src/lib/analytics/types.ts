@@ -12,9 +12,7 @@ export interface Fill {
   dir: string;
   closedPnl: number;
   fee: number;
-  orderId: number;
-  /** True when the wallet was the taker. */
-  crossed: boolean;
+  orderId: string;
 }
 
 /** One or more closing fills from the same order, grouped into a trade. */
@@ -59,8 +57,6 @@ export interface Summary {
   maxDrawdown: number;
   longestWinStreak: number;
   longestLossStreak: number;
-  /** Share of fills where the wallet provided liquidity. */
-  makerShare: number;
 }
 
 export interface Bucket {
@@ -97,18 +93,31 @@ export interface Insight {
   stat?: string;
 }
 
-export interface AccountSnapshot {
-  accountValue: number;
-  openPositions: number;
+/** What a data source can and cannot tell us, so the UI never claims more than it knows. */
+export interface Capabilities {
+  /** The venue supports short positions. False for spot and on-chain swaps. */
+  shorts: boolean;
+  /** Fees are known. False when the source only reports P&L. */
+  fees: boolean;
+}
+
+export interface Subject {
+  /** Address or handle exactly as used in the URL. */
+  id: string;
+  /** Human-readable form, shortened for addresses and prefixed with @ for handles. */
+  label: string;
+  kind: "address" | "handle";
 }
 
 export interface WalletReport {
-  address: string;
-  source: "hyperliquid" | "demo";
+  subject: Subject;
+  source: "robinhood" | "demo" | "journal";
+  capabilities: Capabilities;
+  /** Source-specific caveats worth showing next to the numbers. */
+  notes: string[];
   generatedAt: number;
   /** True when the exchange history window was capped and older fills are missing. */
   truncated: boolean;
-  account: AccountSnapshot | null;
   summary: Summary;
   equity: EquityPoint[];
   assets: AssetStat[];

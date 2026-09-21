@@ -87,3 +87,29 @@ table { border-collapse: collapse; width: 100%; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Printing produces a clean light report. Interactive chrome is hidden. */
+@media print {
+  :root {
+    --bg: #fff;
+    --surface: #fff;
+    --surface-2: #f6f7f9;
+    --surface-3: #eef0f4;
+    --border: #d9dde5;
+    --border-strong: #c2c8d3;
+    --text: #111318;
+    --text-2: #2b303c;
+    --muted: #4d5566;
+    --dim: #6b7385;
+    --accent: #4a56d6;
+    --accent-strong: #3742b8;
+    --gain: #0f8a5f;
+    --loss: #c4363b;
+    --caution: #a86b00;
+    color-scheme: light;
+  }
+
+  body { font-size: 12px; }
+  header, footer, .no-print { display: none !important; }
+  .container { width: 100%; }
+}

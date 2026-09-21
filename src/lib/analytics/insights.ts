@@ -1,5 +1,5 @@
 import { formatPercent, formatUsd } from "../format";
-import type { AssetStat, Bucket, ClosedTrade, Insight, SideStat, Summary } from "./types";
+import type { AssetStat, Bucket, Capabilities, ClosedTrade, Insight, SideStat, Summary } from "./types";
 
 const MIN_TRADES = 20;
 const MIN_BUCKET = 5;
@@ -11,6 +11,7 @@ interface Input {
   assets: AssetStat[];
   sides: SideStat[];
   hours: Bucket[];
+  capabilities: Capabilities;
 }
 
 const average = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0);
@@ -41,7 +42,7 @@ function hourRange(bucket: Bucket): string {
  * from the wallet's own fills and states the figures it is based on, so
  * nothing here is generic advice.
  */
-export function generateInsights({ summary, trades, assets, sides, hours }: Input): Insight[] {
+export function generateInsights({ summary, trades, assets, sides, hours, capabilities }: Input): Insight[] {
   if (summary.tradeCount === 0) return [];
 
   const insights: Insight[] = [];
@@ -134,25 +135,21 @@ export function generateInsights({ summary, trades, assets, sides, hours }: Inpu
   }
 
   // Fees
-  if (summary.fees > 0 && gross > 0 && summary.netPnl <= 0) {
+  if (capabilities.fees && summary.fees > 0 && gross > 0 && summary.netPnl <= 0) {
     insights.push({
       id: "fees-flip",
       tone: "caution",
       title: "Fees turn a gross profit into a loss",
       stat: formatUsd(summary.fees, { compact: true }),
-      body: `Before fees the wallet made ${formatUsd(gross, { signed: true })}. ${formatUsd(summary.fees)} in fees took it to ${formatUsd(summary.netPnl, { signed: true })}. Trading less often, or resting limit orders instead of crossing the spread, would change the outcome.`,
+      body: `Before fees the wallet made ${formatUsd(gross, { signed: true })}. ${formatUsd(summary.fees)} in fees took it to ${formatUsd(summary.netPnl, { signed: true })}. Trading less often would change the outcome.`,
     });
-  } else if (summary.fees > 0 && gross > 0 && summary.fees / gross > 0.25) {
+  } else if (capabilities.fees && summary.fees > 0 && gross > 0 && summary.fees / gross > 0.25) {
     insights.push({
       id: "fee-drag",
       tone: "caution",
       title: "Fees are a heavy drag",
       stat: formatPercent(summary.fees / gross, 0),
-      body: `Fees consumed ${formatPercent(summary.fees / gross, 0)} of gross profit (${formatUsd(summary.fees)} of ${formatUsd(gross)}). ${
-        summary.makerShare < 0.2
-          ? `Only ${formatPercent(summary.makerShare, 0)} of fills were maker orders, so switching some entries to limit orders could recover part of that.`
-          : "Reducing trade frequency is the other lever."
-      }`,
+      body: `Fees consumed ${formatPercent(summary.fees / gross, 0)} of gross profit (${formatUsd(summary.fees)} of ${formatUsd(gross)}). Every swap pays gas, so fewer, larger trades cost less than many small ones.`,
     });
   }
 
@@ -209,7 +206,7 @@ export function generateInsights({ summary, trades, assets, sides, hours }: Inpu
 
   // Direction bias
   const [long, short] = sides;
-  if (long.trades >= 10 && short.trades >= 10) {
+  if (capabilities.shorts && long.trades >= 10 && short.trades >= 10) {
     const weaker = long.pnl < short.pnl ? long : short;
     const stronger = weaker === long ? short : long;
     if (weaker.pnl < 0 && stronger.pnl > 0) {

@@ -49,7 +49,7 @@ export function AddressForm({ variant = "hero", initialValue = "" }: AddressForm
             setValue(event.target.value);
             if (error) setError(null);
           }}
-          placeholder={variant === "compact" ? "0x… wallet address" : "0x… paste a wallet address"}
+          placeholder={variant === "compact" ? "0x… wallet address" : "0x… paste a Robinhood Chain wallet address"}
           autoComplete="off"
           autoCapitalize="off"
           autoCorrect="off"

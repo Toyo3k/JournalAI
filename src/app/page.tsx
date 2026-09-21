@@ -6,7 +6,7 @@ import styles from "@/components/home/home.module.css";
 const FEATURES = [
   {
     title: "The facts, straight",
-    body: "Net P&L after fees, win rate, profit factor, drawdown, volume and streaks, all computed from the wallet's actual fills.",
+    body: "Net P&L after gas, win rate, profit factor, drawdown, volume and streaks, all computed from the wallet's actual swaps.",
     icon: (
       <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none" />
     ),
@@ -28,8 +28,8 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { title: "Paste an address", body: "Any wallet that trades perpetuals on Hyperliquid. No signup, no connection." },
-  { title: "We read the public history", body: "Fills, fees and realized P&L are pulled read-only from the exchange's public API." },
+  { title: "Paste an address", body: "Any wallet that has traded on Robinhood Chain. No signup, no wallet connection." },
+  { title: "We read the public history", body: "Token transfers are pulled read-only from Etherscan and rebuilt into swaps, priced in USD." },
   { title: "Get your review", body: "Grouped into closed trades and turned into metrics, charts and plain-language insights." },
 ];
 
@@ -39,14 +39,14 @@ export default function HomePage() {
       <section className={styles.hero}>
         <div className={`container ${styles.heroInner}`}>
           <span className={styles.pill}>
-            <i /> Read-only. Works from public data
+            <i /> Robinhood Chain. Read-only, from public data
           </span>
           <h1 className={styles.title}>
             Understand your trading, <em>from a wallet address.</em>
           </h1>
           <p className={styles.lede}>
-            Paste any wallet and get a clear review of its trading history: what it made, what it paid, and the habits
-            behind the results.
+            Paste a Robinhood Chain wallet and get a clear review of its trading history: what it made, what it paid, and
+            the habits behind the results.
           </p>
           <div className={styles.formWrap}>
             <AddressForm />
@@ -93,6 +93,21 @@ export default function HomePage() {
               <p>{step.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className={`container ${styles.section}`}>
+        <div className={styles.privacy}>
+          <div>
+            <h2>Keep a private trade journal.</h2>
+            <p>
+              Log trades with your setup, emotion and whether you followed your plan, or import a CSV. JournalAI shows
+              which habits help and which cost you, and it never leaves your browser.
+            </p>
+          </div>
+          <Link href="/journal" className={styles.cta}>
+            Open your journal
+          </Link>
         </div>
       </section>
 

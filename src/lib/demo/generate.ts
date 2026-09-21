@@ -13,22 +13,23 @@ function mulberry32(seed: number) {
 }
 
 const MARKETS = [
-  { coin: "BTC", price: 96_000, weight: 4, edge: 0.08 },
-  { coin: "ETH", price: 3_400, weight: 3, edge: 0.03 },
-  { coin: "SOL", price: 190, weight: 2, edge: -0.05 },
-  { coin: "HYPE", price: 32, weight: 1, edge: -0.12 },
+  { coin: "TSLA", price: 340, weight: 4, edge: 0.1 },
+  { coin: "NVDA", price: 175, weight: 3, edge: 0.05 },
+  { coin: "AAPL", price: 235, weight: 2, edge: -0.04 },
+  { coin: "AMZN", price: 210, weight: 1, edge: -0.14 },
 ];
 
 const HOURS = [1, 2, 8, 9, 10, 13, 14, 14, 15, 16, 20, 21, 22];
 const DAY_MS = 86_400_000;
-const TAKER_FEE = 0.00045;
-const MAKER_FEE = 0.00015;
+/** Gas on Robinhood Chain is cheap, so a swap costs cents rather than dollars. */
+const GAS_MIN = 0.03;
+const GAS_RANGE = 0.35;
 
 /**
- * Builds a believable synthetic fill history in the same shape as real
- * exchange data, so the sample report exercises the exact analysis pipeline.
- * The behaviour is intentional: bigger size after losses, a weak spot in SOL
- * and HYPE, and a leaning towards longs.
+ * Builds a believable synthetic swap history in the same shape the Robinhood
+ * Chain adapter produces, so the sample report exercises the exact analysis
+ * pipeline. The behaviour is intentional: bigger size after losses, a weak
+ * spot in AMZN and AAPL, and a costly late-evening window.
  */
 export function generateDemoFills(end = Date.UTC(2026, 8, 1), tradeCount = 180): Fill[] {
   const random = mulberry32(42);
@@ -50,13 +51,12 @@ export function generateDemoFills(end = Date.UTC(2026, 8, 1), tradeCount = 180):
     return end - daysAgo * DAY_MS + hour * 3_600_000 + Math.floor(random() * 3_000_000);
   }).sort((a, b) => a - b);
 
-  let orderId = 1_000;
-  let tradeId = 1;
+  let hashCounter = 1;
+  const hash = () => `0x${(hashCounter++).toString(16).padStart(64, "0")}`;
   let lastWasLoss: boolean = false;
 
   for (let i = 0; i < tradeCount; i++) {
     const market = pick();
-    const isLong = random() < 0.68;
     const closeTime = closeTimes[i];
     const hour = new Date(closeTime).getUTCHours();
 
@@ -65,49 +65,41 @@ export function generateDemoFills(end = Date.UTC(2026, 8, 1), tradeCount = 180):
     const price = market.price * (0.92 + random() * 0.16);
     const size = notional / price;
 
-    const winChance = 0.56 + market.edge + (isLong ? 0.04 : -0.06) - (hour === 22 || hour === 21 ? 0.14 : 0);
+    const winChance = 0.56 + market.edge - (hour === 22 || hour === 21 ? 0.14 : 0);
     const win = random() < winChance;
     const move = win ? 0.006 + random() * 0.026 : -(0.005 + random() * 0.02);
     const pnl: number = notional * move * (win ? 1 : lastWasLoss ? 1.1 : 1);
 
-    const openFee = notional * (random() < 0.15 ? MAKER_FEE : TAKER_FEE);
-    const closeCrossed = random() < 0.85;
-    const closeFee = notional * (closeCrossed ? TAKER_FEE : MAKER_FEE);
+    const openFee = GAS_MIN + random() * GAS_RANGE;
+    const closeFee = GAS_MIN + random() * GAS_RANGE;
     const openTime = closeTime - (20 + random() * 600) * 60_000;
-    const orderOpen = orderId++;
-    const orderClose = orderId++;
+    const openHash = hash();
+    const closeHash = hash();
 
     fills.push({
-      id: String(tradeId++),
+      id: `${openHash}:buy`,
       coin: market.coin,
       price,
       size,
-      isBuy: isLong,
+      isBuy: true,
       time: openTime,
-      dir: isLong ? "Open Long" : "Open Short",
+      dir: "Open Long",
       closedPnl: 0,
       fee: openFee,
-      orderId: orderOpen,
-      crossed: true,
+      orderId: openHash,
     });
-
-    // Some exits fill in two slices, as large orders do on a real book.
-    const slices = random() < 0.25 ? 2 : 1;
-    for (let slice = 0; slice < slices; slice++) {
-      fills.push({
-        id: String(tradeId++),
-        coin: market.coin,
-        price: price * (1 + move * (isLong ? 1 : -1)),
-        size: size / slices,
-        isBuy: !isLong,
-        time: closeTime + slice * 1_500,
-        dir: isLong ? "Close Long" : "Close Short",
-        closedPnl: pnl / slices,
-        fee: closeFee / slices,
-        orderId: orderClose,
-        crossed: closeCrossed,
-      });
-    }
+    fills.push({
+      id: `${closeHash}:sell`,
+      coin: market.coin,
+      price: price * (1 + move),
+      size,
+      isBuy: false,
+      time: closeTime,
+      dir: "Close Long",
+      closedPnl: pnl,
+      fee: closeFee,
+      orderId: closeHash,
+    });
 
     lastWasLoss = pnl - closeFee < 0;
   }

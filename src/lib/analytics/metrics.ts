@@ -71,7 +71,6 @@ export function summarise(fills: Fill[], trades: ClosedTrade[]): Summary {
     maxDrawdown: maxDrawdown(fills),
     longestWinStreak: bestWin,
     longestLossStreak: bestLoss,
-    makerShare: fills.length ? fills.filter((fill) => !fill.crossed).length / fills.length : 0,
   };
 }
 
@@ -86,7 +85,10 @@ export function byAsset(fills: Fill[], trades: ClosedTrade[]): AssetStat[] {
     return value;
   };
 
-  for (const fill of fills) entry(fill.coin).volume += fill.price * fill.size;
+  for (const fill of fills) {
+    // Fee-only fills (such as gas) have no size and are not a market.
+    if (fill.size > 0) entry(fill.coin).volume += fill.price * fill.size;
+  }
   for (const trade of trades) {
     const value = entry(trade.coin);
     value.trades += 1;
