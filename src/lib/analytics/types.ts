@@ -13,6 +13,10 @@ export interface Fill {
   closedPnl: number;
   fee: number;
   orderId: string;
+  /** Contract address of the asset traded, when the source knows it. */
+  assetId?: string;
+  /** On closing fills: when the shares being sold were acquired, weighted by quantity. */
+  openedAt?: number;
 }
 
 /** One or more closing fills from the same order, grouped into a trade. */
@@ -25,6 +29,9 @@ export interface ClosedTrade {
   pnl: number;
   fees: number;
   notional: number;
+  assetId?: string;
+  /** When the position was opened, if the source recorded it. */
+  openedAt?: number;
 }
 
 export interface EquityPoint {
@@ -109,6 +116,70 @@ export interface Subject {
   kind: "address" | "handle";
 }
 
+export interface HoldingStats {
+  /** Trades that had an open time, which is what every figure here is based on. */
+  trades: number;
+  avgMs: number;
+  medianMs: number;
+  winnersAvgMs: number | null;
+  losersAvgMs: number | null;
+  /** How the holding period relates to results, from quick flips to long holds. */
+  buckets: Bucket[];
+}
+
+export interface WhatIf {
+  id: string;
+  label: string;
+  detail: string;
+  /** Change in net trade P&L if the scenario had applied. */
+  delta: number;
+  tradesAffected: number;
+}
+
+export interface RiskStats {
+  /** Mean daily P&L over its standard deviation, annualised. Null without enough days. */
+  sharpe: number | null;
+  /** Like Sharpe but only penalises losing days. */
+  sortino: number | null;
+  /** Fraction of capital the edge suggests risking per trade. Zero or negative means no edge. */
+  kelly: number | null;
+  /** Net P&L divided by max drawdown. */
+  recoveryFactor: number | null;
+  /** The longest stretch spent below a previous equity peak. */
+  longestDrawdownMs: number;
+  /** Still below the peak as of the last trade. */
+  underwater: boolean;
+  currentDrawdown: number;
+  /** The loss that 1 trade in 20 exceeds. Negative when it is a loss. */
+  var95: number | null;
+  /** Worst loss as a multiple of the average loss. */
+  tailRatio: number | null;
+  whatIfs: WhatIf[];
+}
+
+export interface StockInfo {
+  symbol: string;
+  name: string;
+}
+
+export interface StockTokenStat {
+  symbol: string;
+  name: string;
+  trades: number;
+  pnl: number;
+  winRate: number;
+}
+
+export interface StockContext {
+  stockTrades: number;
+  otherTrades: number;
+  stockPnl: number;
+  otherPnl: number;
+  /** Stock trades grouped by the US market session they were closed in. */
+  sessions: Bucket[];
+  tokens: StockTokenStat[];
+}
+
 export interface WalletReport {
   subject: Subject;
   source: "robinhood" | "demo" | "journal";
@@ -126,4 +197,10 @@ export interface WalletReport {
   weekdays: Bucket[];
   recentTrades: ClosedTrade[];
   insights: Insight[];
+  /** Null when the source did not record open times. */
+  holding: HoldingStats | null;
+  /** Null when there is too little activity to say anything. */
+  risk: RiskStats | null;
+  /** Null when no Robinhood stock tokens were traded, or stocks could not be identified. */
+  stocks: StockContext | null;
 }

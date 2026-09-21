@@ -258,3 +258,40 @@
   .card { padding: 18px; }
   .stat { padding: 16px; }
 }
+
+/* Holding, risk and stock sections */
+.miniKpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+.miniKpis > * { padding: 16px 18px; }
+.miniKpis .statValue { font-size: 24px; }
+.footnote { margin-top: 10px; color: var(--dim); font-size: 13px; line-height: 1.55; max-width: 720px; }
+.subhead { margin: 26px 0 4px; font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+.subLabel { color: var(--muted); font-size: 13px; }
+.table tr[data-empty="true"] > * { opacity: 0.45; }
+
+.whatIfs { margin-top: 26px; }
+.whatIfs h3 { font-size: 14.5px; font-weight: 600; }
+.whatIfs ul { display: grid; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }
+.whatIfs li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.whatIfs li div { display: grid; gap: 3px; }
+.whatIfs strong { font-size: 14.5px; font-weight: 600; }
+.whatIfs span { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.whatIfs em { font-style: normal; font-size: 18px; font-weight: 600; white-space: nowrap; }
+
+.split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 4px; }
+
+@media (max-width: 960px) {
+  .miniKpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .whatIfs li { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .split { grid-template-columns: 1fr; }
+}

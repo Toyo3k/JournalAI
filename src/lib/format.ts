@@ -46,3 +46,15 @@ export function shortenAddress(address: string): string {
 export function pluralise(count: number, singular: string, plural = `${singular}s`): string {
   return `${count.toLocaleString("en-US")} ${count === 1 ? singular : plural}`;
 }
+
+const MINUTE = 60_000;
+const HOUR = 3_600_000;
+const DAY = 86_400_000;
+
+/** A short, human duration such as "12m", "5.2h" or "3.4d". */
+export function formatDuration(ms: number): string {
+  if (ms < MINUTE) return "under 1m";
+  if (ms < HOUR) return `${Math.round(ms / MINUTE)}m`;
+  if (ms < 2 * DAY) return `${(ms / HOUR).toFixed(ms < 10 * HOUR ? 1 : 0)}h`;
+  return `${(ms / DAY).toFixed(ms < 10 * DAY ? 1 : 0)}d`;
+}

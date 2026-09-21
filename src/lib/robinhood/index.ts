@@ -75,7 +75,11 @@ export async function loadRobinhood(address: string): Promise<SourceData> {
   const result = reconstructTrades({ transfers, gas, ethUsd });
 
   if (!result.swaps && !result.fills.length && (normal.rows.length || tokens.rows.length)) {
-    throw new SourceError("This wallet has activity on Robinhood Chain, but no swaps that could be priced in USD.");
+    throw new SourceError(
+      result.skipped
+        ? `This wallet's ${pluralise(result.skipped, "swap")} all went straight between two tokens, such as a stock token and a launched token. Those cannot be priced in USD yet, so there is nothing to report.`
+        : "This wallet has activity on Robinhood Chain, but no swaps that could be priced in USD.",
+    );
   }
 
   const notes = [

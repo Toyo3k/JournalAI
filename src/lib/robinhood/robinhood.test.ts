@@ -124,6 +124,17 @@ describe("Robinhood Chain adapter", () => {
     expect((await loadRobinhood(me)).fills).toEqual([]);
   });
 
+  it("explains when every swap was token to token and none could be priced", async () => {
+    vi.stubEnv("ETHERSCAN_API_KEY", "key");
+    stubEtherscan({
+      tokentx: [
+        { hash: "0x1", from: me, to: router, contractAddress: "0xaaa", tokenSymbol: "AAA", tokenDecimal: "18", value: "5000000000000000000", timeStamp: t("2026-08-01T00:00:00Z"), blockNumber: "1" },
+        { hash: "0x1", from: router, to: me, contractAddress: "0xbbb", tokenSymbol: "BBB", tokenDecimal: "18", value: "9000000000000000000", timeStamp: t("2026-08-01T00:00:00Z"), blockNumber: "1" },
+      ],
+    });
+    await expect(loadRobinhood(me)).rejects.toThrow(/all went straight between two tokens/);
+  });
+
   it("turns Etherscan's string errors into readable ones", async () => {
     vi.stubEnv("ETHERSCAN_API_KEY", "bad");
     // A fresh Response per call, because a body can only be read once.

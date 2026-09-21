@@ -68,6 +68,40 @@ describe("reconstructTrades", () => {
     expect(fills.at(-1)?.closedPnl).toBeCloseTo(100);
   });
 
+  it("dates each sale by the oldest shares it sold, using first in first out", () => {
+    const { fills } = reconstructTrades({
+      ethUsd,
+      gas: [],
+      transfers: [
+        move("0x1", 1 * HOUR, "USDC", 100, "out"),
+        move("0x1", 1 * HOUR, "XYZ", 10, "in"),
+        move("0x2", 5 * HOUR, "USDC", 100, "out"),
+        move("0x2", 5 * HOUR, "XYZ", 10, "in"),
+        // Sells 15: all of the first lot (bought at 1h) and half of the second (bought at 5h).
+        move("0x3", 9 * HOUR, "XYZ", 15, "out"),
+        move("0x3", 9 * HOUR, "USDC", 300, "in"),
+        // Sells the remaining 5, which all came from the second lot.
+        move("0x4", 11 * HOUR, "XYZ", 5, "out"),
+        move("0x4", 11 * HOUR, "USDC", 100, "in"),
+      ],
+    });
+
+    const sells = fills.filter((fill) => fill.dir === "Close Long");
+    // (10 x 1h + 5 x 5h) / 15 = 2.33h
+    expect(sells[0].openedAt).toBeCloseTo((10 * 1 + 5 * 5) / 15 * HOUR);
+    expect(sells[1].openedAt).toBe(5 * HOUR);
+    expect(fills.filter((fill) => fill.dir === "Open Long").every((fill) => fill.openedAt === undefined)).toBe(true);
+  });
+
+  it("records the contract address so stock tokens can be identified", () => {
+    const { fills } = reconstructTrades({
+      ethUsd,
+      gas: [],
+      transfers: [move("0x1", HOUR, "USDC", 100, "out"), move("0x1", HOUR, "TSLA", 1, "in", "0xabc")],
+    });
+    expect(fills[0].assetId).toBe("0xabc");
+  });
+
   it("ignores wraps, plain transfers and stable-to-ETH conversions", () => {
     const { fills, swaps } = reconstructTrades({
       ethUsd,

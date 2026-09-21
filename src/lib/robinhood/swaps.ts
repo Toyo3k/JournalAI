@@ -113,18 +113,21 @@ export function reconstructTrades({ transfers, gas, ethUsd }: Input): Reconstruc
 
   swaps.sort((a, b) => a.time - b.time || a.hash.localeCompare(b.hash));
 
-  const positions = new Map<string, { quantity: number; cost: number }>();
+  // P&L uses average cost. Holding time uses the oldest shares first, since a sale most plausibly
+  // closes the earliest purchase, so each position also keeps its buys as a queue of lots.
+  const positions = new Map<string, { quantity: number; cost: number; lots: { quantity: number; time: number }[] }>();
   const fills: Fill[] = [];
   const swapHashes = new Set<string>();
   let untracked = 0;
 
   for (const swap of swaps) {
-    const position = positions.get(swap.assetId) ?? { quantity: 0, cost: 0 };
-    const base = { id: `${swap.hash}:${swap.side}`, coin: swap.symbol, time: swap.time, orderId: swap.hash, fee: 0 };
+    const position = positions.get(swap.assetId) ?? { quantity: 0, cost: 0, lots: [] };
+    const base = { id: `${swap.hash}:${swap.side}`, coin: swap.symbol, time: swap.time, orderId: swap.hash, fee: 0, assetId: swap.assetId };
 
     if (swap.side === "buy") {
       position.quantity += swap.amount;
       position.cost += swap.usd;
+      position.lots.push({ quantity: swap.amount, time: swap.time });
       positions.set(swap.assetId, position);
       fills.push({ ...base, price: swap.usd / swap.amount, size: swap.amount, isBuy: true, dir: "Open Long", closedPnl: 0 });
       swapHashes.add(swap.hash);
@@ -143,6 +146,20 @@ export function reconstructTrades({ transfers, gas, ethUsd }: Input): Reconstruc
     position.quantity -= tracked;
     positions.set(swap.assetId, position);
 
+    // Consume the oldest lots and average their purchase times, weighted by how much of each was sold.
+    let remaining = tracked;
+    let weighted = 0;
+    while (remaining > DUST && position.lots.length) {
+      const lot = position.lots[0];
+      const taken = Math.min(lot.quantity, remaining);
+      weighted += taken * lot.time;
+      lot.quantity -= taken;
+      remaining -= taken;
+      if (lot.quantity <= DUST) position.lots.shift();
+    }
+    const consumed = tracked - Math.max(0, remaining);
+    const openedAt = consumed > DUST ? weighted / consumed : undefined;
+
     fills.push({
       ...base,
       price: swap.usd / swap.amount,
@@ -150,6 +167,7 @@ export function reconstructTrades({ transfers, gas, ethUsd }: Input): Reconstruc
       isBuy: false,
       dir: "Close Long",
       closedPnl: proceeds - average * tracked,
+      openedAt,
     });
     swapHashes.add(swap.hash);
   }

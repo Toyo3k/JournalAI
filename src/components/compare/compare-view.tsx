@@ -2,7 +2,7 @@ import Link from "next/link";
 import { InsightsPanel } from "@/components/report/insights-panel";
 import type { Comparison, MetricFormat, MetricRow } from "@/lib/analytics/compare";
 import type { WalletReport } from "@/lib/analytics/types";
-import { formatDate, formatPercent, formatUsd, pluralise } from "@/lib/format";
+import { formatDate, formatDuration, formatPercent, formatUsd, pluralise } from "@/lib/format";
 import report from "@/components/report/report.module.css";
 import { CompareChart } from "./compare-chart";
 import styles from "./compare.module.css";
@@ -31,6 +31,8 @@ function formatMetric(value: number | null, format: MetricFormat): string {
       return value.toFixed(2);
     case "count":
       return value.toLocaleString("en-US");
+    case "duration":
+      return formatDuration(value);
   }
 }
 

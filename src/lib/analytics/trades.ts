@@ -12,6 +12,8 @@ function isClosing(fill: Fill): boolean {
  */
 export function buildTrades(fills: Fill[]): ClosedTrade[] {
   const groups = new Map<string, ClosedTrade>();
+  // Running totals for the size-weighted open time of each trade.
+  const opened = new Map<string, { weight: number; sum: number }>();
 
   for (const fill of fills) {
     if (!isClosing(fill)) continue;
@@ -20,6 +22,13 @@ export function buildTrades(fills: Fill[]): ClosedTrade[] {
     const notional = fill.price * fill.size;
     const net = fill.closedPnl - fill.fee;
     const existing = groups.get(key);
+
+    if (fill.openedAt !== undefined && fill.size > 0) {
+      const total = opened.get(key) ?? { weight: 0, sum: 0 };
+      total.weight += fill.size;
+      total.sum += fill.size * fill.openedAt;
+      opened.set(key, total);
+    }
 
     if (existing) {
       existing.pnl += net;
@@ -41,7 +50,13 @@ export function buildTrades(fills: Fill[]): ClosedTrade[] {
       pnl: net,
       fees: fill.fee,
       notional,
+      assetId: fill.assetId,
     });
+  }
+
+  for (const [key, total] of opened) {
+    const trade = groups.get(key);
+    if (trade && total.weight > 0) trade.openedAt = total.sum / total.weight;
   }
 
   return [...groups.values()].sort((a, b) => a.closedAt - b.closedAt);

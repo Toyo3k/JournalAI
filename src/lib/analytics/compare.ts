@@ -1,7 +1,7 @@
 import { formatPercent, formatUsd } from "../format";
 import type { AssetStat, WalletReport } from "./types";
 
-export type MetricFormat = "usd" | "usdSigned" | "percent" | "percentFine" | "ratio" | "count";
+export type MetricFormat = "usd" | "usdSigned" | "percent" | "percentFine" | "ratio" | "count" | "duration";
 export type Winner = "a" | "b" | "tie";
 
 export interface MetricRow {
@@ -92,10 +92,13 @@ export function metricRows(a: WalletReport, b: WalletReport): MetricRow[] {
       "How much bigger the average winner is than the average loser.",
     ),
     row("expectancy", "Expectancy per trade", "usdSigned", x.expectancy, y.expectancy, "higher"),
+    row("sharpe", "Sharpe-like ratio", "ratio", a.risk?.sharpe ?? null, b.risk?.sharpe ?? null, "higher", "Daily P&L divided by how much it swings, annualised. Needs two weeks of history."),
     row("drawdown", "Max drawdown", "usd", x.maxDrawdown, y.maxDrawdown, "lower", "Largest peak to trough fall in realized P&L."),
+    row("recovery", "Recovery factor", "ratio", a.risk?.recoveryFactor ?? null, b.risk?.recoveryFactor ?? null, "higher", "Net P&L divided by max drawdown."),
     row("fees", "Fees paid", "usd", feesKnown ? x.fees : null, feesKnown ? y.fees : null, "lower"),
     row("lossStreak", "Longest losing streak", "count", x.longestLossStreak, y.longestLossStreak, "lower"),
     row("winStreak", "Longest winning streak", "count", x.longestWinStreak, y.longestWinStreak, "higher"),
+    row("hold", "Average hold time", "duration", a.holding?.avgMs ?? null, b.holding?.avgMs ?? null, null, "How long positions were held before closing, where the open time is known."),
     row("trades", "Closed trades", "count", x.tradeCount, y.tradeCount, null),
     row("days", "Active days", "count", x.activeDays, y.activeDays, null),
     row("volume", "Trading volume", "usd", x.volume, y.volume, null),

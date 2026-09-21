@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { WalletReport } from "@/lib/analytics/types";
 import { formatDate, formatPercent, formatRatio, formatUsd, pluralise } from "@/lib/format";
 import { BarChart } from "./bar-chart";
+import { HoldingSection, RiskSection, StockSection } from "./context-sections";
 import { EquityChart } from "./equity-chart";
 import { InsightsPanel } from "./insights-panel";
 import { StatCard } from "./stat-card";
@@ -185,6 +186,10 @@ export function ReportView({ report, right, actions, hideHeader = false, hideRec
             </Section>
             ) : null}
           </div>
+
+          {report.holding ? <HoldingSection holding={report.holding} /> : null}
+          {report.risk ? <RiskSection risk={report.risk} /> : null}
+          {report.stocks ? <StockSection stocks={report.stocks} /> : null}
 
           <Section title={capabilities.shorts ? "Markets" : "Tokens"} subtitle="Ranked by traded volume">
             <AssetTable assets={report.assets} />

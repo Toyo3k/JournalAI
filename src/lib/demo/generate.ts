@@ -123,6 +123,7 @@ export function generateDemoFills(profile: DemoProfile = "active", end = Date.UT
       closedPnl: pnl,
       fee: closeFee,
       orderId: closeHash,
+      openedAt: openTime,
     });
 
     lastWasLoss = pnl - closeFee < 0;

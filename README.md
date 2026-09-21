@@ -24,6 +24,29 @@ pnpm dev
 
 Open http://localhost:3000. Use **Sample report** to explore without an address.
 
+## Holding time, risk and stock context
+
+Wallet reports add three sections beyond the headline numbers:
+
+- **Holding time.** Average and median hold, winners against losers, and results by holding period (under 1h up to
+  over 7d). It flags holding losers longer than winners (the disposition effect) and quick flips that lose money. Each
+  sale is dated by the oldest shares it sold (first in, first out), so a position built over several buys is timed from
+  its earliest purchase. Not available for the journal, which does not record open times.
+- **Risk.** A Sharpe-like and Sortino-like ratio, the Kelly fraction, recovery factor, longest drawdown and whether the
+  wallet is still under water, 95% value at risk, and how much worse the worst loss was than a typical one. There are
+  no account balances on chain, so the ratios are built from daily P&L and are best read as consistency scores. They
+  need at least two weeks of history and eight active days, and are withheld otherwise. A **What if** list shows what
+  skipping the worst hour, the worst token, or oversized losses would have changed. It is hindsight, not a forecast.
+- **Stock tokens.** Robinhood's official public list (`api.robinhood.com/rhj/assets`, cached for an hour) is used to
+  identify stock tokens **by contract address**, not by symbol, so a lookalike token named TSLA is not counted. The
+  section splits P&L between stock tokens and everything else, groups stock trades by the US market session they were
+  closed in (regular, pre-market, after hours, overnight, or market closed on weekends and holidays, all in New York
+  time), and lists the stocks traded with company names. If the list cannot be reached the section is simply omitted.
+
+Limits worth knowing: the market holiday calendar in `src/lib/analytics/sessions.ts` covers 2025 to 2027 and needs
+extending after that (outside it only weekends count as closed), and Robinhood's corporate actions feed is not used
+because it only covers about two months.
+
 ## Sharing and comparing
 
 - **Share cards.** Every wallet report has a generated 1200x630 card (net P&L, win rate, profit factor, equity curve)
@@ -103,8 +126,8 @@ src/
     share/                Share card image and share buttons
     ui/                   Small shared primitives
   lib/
-    robinhood/            Etherscan client, ETH prices, swap reconstruction
-    analytics/            Fills -> trades -> metrics -> insights, and wallet comparison
+    robinhood/            Etherscan client, ETH prices, swap reconstruction, stock token registry
+    analytics/            Fills -> trades -> metrics -> insights, plus holding, risk, stock context and comparison
     journal/              Entry types, storage, CSV parser, behaviour patterns
     demo/                 Deterministic sample data generator
     report.ts             Loads a wallet or the demo into a WalletReport
