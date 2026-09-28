@@ -143,7 +143,7 @@ export function ShareBar({ compareHref, name }: ShareBarProps) {
 
           <footer className={styles.actions}>
             {card === "ready" ? (
-              <a className={styles.primary} href={cardUrl} download={`journalai-${name}.png`}>
+              <a className={styles.primary} href={cardUrl} download={`neurox-${name}.png`}>
                 Download PNG
               </a>
             ) : (

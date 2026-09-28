@@ -1,9 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CsvError, importCsv, parseMoney, parseRows } from "./csv";
 import { journalPatterns } from "./patterns";
-import { parseEntries } from "./storage";
+import { STORAGE_KEY, migrateLegacyStorage, parseEntries } from "./storage";
 import { buildJournalReport, entriesToFills } from "./to-report";
 import type { JournalEntry } from "./types";
+
+/** The key entries were saved under before the app was renamed from JournalAI to NeuroX. */
+const LEGACY_KEY = "journalai.journal.v1";
+
+/** A minimal in-memory localStorage, since this suite runs in a plain Node environment. */
+function stubLocalStorage(seed: Record<string, string> = {}) {
+  const store = new Map(Object.entries(seed));
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
+    setItem: (key: string, value: string) => void store.set(key, value),
+    removeItem: (key: string) => void store.delete(key),
+    clear: () => store.clear(),
+  });
+  return store;
+}
 
 const entry = (overrides: Partial<JournalEntry>): JournalEntry => ({
   id: Math.random().toString(36).slice(2),
@@ -90,6 +105,43 @@ describe("parseEntries", () => {
     const good = entry({ id: "ok" });
     const raw = JSON.stringify([good, { id: "bad", asset: "X", pnl: "12", date: "x", direction: "Long" }, null]);
     expect(parseEntries(raw).map((e) => e.id)).toEqual(["ok"]);
+  });
+});
+
+describe("migrateLegacyStorage", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("copies entries from the pre-rename key into the new one", () => {
+    const store = stubLocalStorage({ [LEGACY_KEY]: '[{"id":"1"}]' });
+    migrateLegacyStorage();
+    expect(store.get(STORAGE_KEY)).toBe('[{"id":"1"}]');
+  });
+
+  it("never deletes the legacy key, so nothing is lost if the migration needs to be redone", () => {
+    const store = stubLocalStorage({ [LEGACY_KEY]: '[{"id":"1"}]' });
+    migrateLegacyStorage();
+    expect(store.get(LEGACY_KEY)).toBe('[{"id":"1"}]');
+  });
+
+  it("does nothing when there is no legacy data", () => {
+    const store = stubLocalStorage();
+    migrateLegacyStorage();
+    expect(store.has(STORAGE_KEY)).toBe(false);
+  });
+
+  it("never overwrites the new key once it exists, even as an empty array", () => {
+    const store = stubLocalStorage({ [STORAGE_KEY]: "[]", [LEGACY_KEY]: '[{"id":"1"}]' });
+    migrateLegacyStorage();
+    expect(store.get(STORAGE_KEY)).toBe("[]");
+  });
+
+  it("is a no-op, not a throw, when storage is blocked", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+    });
+    expect(() => migrateLegacyStorage()).not.toThrow();
   });
 });
 

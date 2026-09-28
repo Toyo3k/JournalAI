@@ -1,4 +1,4 @@
-# JournalAI
+# NeuroX
 
 Paste a Robinhood Chain wallet address and get a data-backed review of its trading history: net P&L after gas, win
 rate, profit factor, drawdown, and plain-language insights about the habits that make or cost money. There is also a

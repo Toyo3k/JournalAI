@@ -25,6 +25,8 @@
 
 .brand span { color: var(--accent-strong); }
 
+.brandMark { height: 24px; width: auto; }
+
 .nav { display: flex; align-items: center; gap: 2px; }
 
 .navLink {

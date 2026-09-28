@@ -101,7 +101,7 @@ export default function HomePage() {
           <div>
             <h2>Keep a private trade journal.</h2>
             <p>
-              Log trades with your setup, emotion and whether you followed your plan, or import a CSV. JournalAI shows
+              Log trades with your setup, emotion and whether you followed your plan, or import a CSV. NeuroX shows
               which habits help and which cost you, and it never leaves your browser.
             </p>
           </div>
@@ -116,7 +116,7 @@ export default function HomePage() {
           <div>
             <h2>Nothing to connect. Nothing to sign.</h2>
             <p>
-              JournalAI only reads what is already public. We never request wallet access, signatures or API keys, and
+              NeuroX only reads what is already public. We never request wallet access, signatures or API keys, and
               we can&apos;t move your funds.
             </p>
           </div>

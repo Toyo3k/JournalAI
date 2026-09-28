@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import type { WalletReport } from "@/lib/analytics/types";
 import { formatDate, formatPercent, formatRatio, formatUsd, pluralise } from "@/lib/format";
 
@@ -22,21 +24,42 @@ const COLORS = {
 
 const BASE = { display: "flex", fontFamily: "sans-serif" } as const;
 
-function Mark({ size = 34 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="7" fill="#8592ff" fillOpacity="0.2" />
-      <path d="M5 16.5 9.5 11l3.2 3.2L19 7.5" stroke={COLORS.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+/** The cropped icon glyph from the NeuroX logo, natural size 170x112 (aspect ~1.52). */
+const MARK_ASPECT = 170 / 112;
+
+/**
+ * Loaded once per server lifetime and reused across every card render. `logo-mark.png`
+ * sits next to this file so bundlers can trace and include it in any deployment target.
+ * These routes run on the Node runtime, where `fetch` has no support for `file:` URLs,
+ * so the file is read directly instead of following Edge-runtime `fetch(new URL(...))` examples.
+ */
+let markBytes: Promise<Buffer> | null = null;
+export function loadMark(): Promise<Buffer> {
+  if (!markBytes) {
+    const loaded = readFile(fileURLToPath(new URL("./logo-mark.png", import.meta.url)));
+    // A failure here must not be remembered, or one bad load would break every card for the life of the process.
+    loaded.catch(() => {
+      if (markBytes === loaded) markBytes = null;
+    });
+    markBytes = loaded;
+  }
+  return markBytes;
 }
 
-function Brand() {
+function Mark({ src, height = 36 }: { src: Buffer; height?: number }) {
+  // next/og's renderer (satori) needs an actual image source string, not raw bytes: a data URI it is.
+  const dataUri = `data:image/png;base64,${Buffer.from(src).toString("base64")}`;
+  // eslint-disable-next-line @next/next/no-img-element -- rendered by next/og's ImageResponse, not the browser
+  return <img src={dataUri} width={Math.round(height * MARK_ASPECT)} height={height} style={{ display: "flex" }} alt="" />;
+}
+
+/** `logo` is null when it could not be loaded, so the wordmark still renders on its own rather than the whole card failing. */
+function Brand({ logo }: { logo: Buffer | null }) {
   return (
-    <div style={{ ...BASE, alignItems: "center", gap: 12 }}>
-      <Mark />
+    <div style={{ ...BASE, alignItems: "center", gap: 14 }}>
+      {logo ? <Mark src={logo} /> : null}
       <div style={{ display: "flex", fontSize: 28, fontWeight: 700, color: COLORS.text }}>
-        Journal<span style={{ color: COLORS.accent }}>AI</span>
+        Neuro<span style={{ color: COLORS.accent }}>X</span>
       </div>
     </div>
   );
@@ -83,7 +106,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ReportCard({ report }: { report: WalletReport }) {
+export function ReportCard({ report, logo }: { report: WalletReport; logo: Buffer | null }) {
   const { summary } = report;
   const positive = summary.netPnl >= 0;
   const tone = positive ? COLORS.gain : COLORS.loss;
@@ -103,7 +126,7 @@ export function ReportCard({ report }: { report: WalletReport }) {
       }}
     >
       <div style={{ ...BASE, justifyContent: "space-between", alignItems: "center" }}>
-        <Brand />
+        <Brand logo={logo} />
         <div style={{ display: "flex", padding: "8px 18px", borderRadius: 999, border: `1px solid ${COLORS.border}`, background: COLORS.surface, fontSize: 22, color: COLORS.muted }}>
           {badge}
         </div>
@@ -134,7 +157,7 @@ export function ReportCard({ report }: { report: WalletReport }) {
 }
 
 /** Used when there is no report to show, such as the home page or a wallet that could not be loaded. */
-export function BrandCard({ title, subtitle }: { title: string; subtitle: string }) {
+export function BrandCard({ title, subtitle, logo }: { title: string; subtitle: string; logo: Buffer | null }) {
   return (
     <div
       style={{
@@ -147,7 +170,7 @@ export function BrandCard({ title, subtitle }: { title: string; subtitle: string
         background: `radial-gradient(90% 80% at 20% 0%, rgba(133,146,255,0.2), ${COLORS.bg} 70%)`,
       }}
     >
-      <Brand />
+      <Brand logo={logo} />
       <div style={{ ...BASE, flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", fontSize: 84, lineHeight: 1.05, fontWeight: 800, letterSpacing: -2.5, color: COLORS.text }}>{title}</div>
         <div style={{ display: "flex", fontSize: 32, color: COLORS.muted }}>{subtitle}</div>

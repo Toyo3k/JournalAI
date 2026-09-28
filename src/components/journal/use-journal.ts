@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { STORAGE_KEY, parseEntries, serialiseEntries } from "@/lib/journal/storage";
+import { STORAGE_KEY, migrateLegacyStorage, parseEntries, serialiseEntries } from "@/lib/journal/storage";
 import type { JournalEntry } from "@/lib/journal/types";
 
 const listeners = new Set<() => void>();
@@ -18,6 +18,7 @@ function subscribe(listener: () => void) {
 
 function readRaw(): string {
   try {
+    migrateLegacyStorage();
     return localStorage.getItem(STORAGE_KEY) ?? "[]";
   } catch {
     return "[]";

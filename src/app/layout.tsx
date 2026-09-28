@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   // Share card image URLs are resolved against this, so it must be the public origin in production.
   metadataBase: new URL(siteUrl),
   twitter: { card: "summary_large_image" },
-  title: { default: "JournalAI. Trading insights from any wallet", template: "%s | JournalAI" },
+  title: { default: "NeuroX. Trading insights from any wallet", template: "%s | NeuroX" },
   description:
     "Paste a Robinhood Chain wallet address and get a clear, data-backed review of its trading history: win rate, gas costs, drawdown, and the habits costing or making money.",
 };
