@@ -7,7 +7,7 @@ import { ShareBar } from "@/components/share/share-bar";
 import { isValidAddress, normaliseAddress } from "@/lib/address";
 import type { WalletReport } from "@/lib/analytics/types";
 import { formatPercent, formatUsd, pluralise, shortenAddress } from "@/lib/format";
-import { loadWalletReport } from "@/lib/report";
+import { loadWalletReport, setupProblem } from "@/lib/report";
 import { SourceError } from "@/lib/robinhood/types";
 
 interface PageProps {
@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isValidAddress(address)) return { title: "Wallet" };
 
   const title = `Wallet ${shortenAddress(address)}`;
-  const fallback = { title, description: "A data-backed review of this wallet's trading history on Robinhood Chain." };
-  if (!process.env.ETHERSCAN_API_KEY) return fallback;
+  const fallback = { title, description: "A data-backed review of this wallet's trading history." };
+  if (setupProblem(address)) return fallback;
 
   // Reports are cached per request, so this does not fetch a second time for the page itself.
   try {
@@ -38,14 +38,8 @@ export default async function WalletPage({ params }: PageProps) {
   const address = normaliseAddress(raw);
   if (!isValidAddress(address)) notFound();
 
-  if (!process.env.ETHERSCAN_API_KEY) {
-    return (
-      <ReportError
-        title="Robinhood Chain isn't set up yet"
-        message="Add your Etherscan API key as ETHERSCAN_API_KEY in .env.local, then restart the dev server."
-      />
-    );
-  }
+  const problem = setupProblem(address);
+  if (problem) return <ReportError title={problem.title} message={problem.message} />;
 
   let report: WalletReport;
   try {

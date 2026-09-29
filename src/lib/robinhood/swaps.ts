@@ -3,7 +3,7 @@ import type { Fill } from "../analytics/types";
 export interface Transfer {
   hash: string;
   time: number;
-  /** Contract address, or "native" for the chain's ETH. */
+  /** Contract address or mint, or "native" for the chain's own coin (ETH, or SOL on Solana). */
   assetId: string;
   symbol: string;
   /** Decimal-adjusted, always positive. */
@@ -14,13 +14,17 @@ export interface Transfer {
 export interface GasCost {
   hash: string;
   time: number;
-  eth: number;
+  /** Paid in the chain's native coin. */
+  native: number;
 }
 
 interface Input {
   transfers: Transfer[];
   gas: GasCost[];
-  ethUsd: (ms: number) => number;
+  /** USD price of the native coin at a moment in time. */
+  nativeUsd: (ms: number) => number;
+  /** How to tell quote assets from traded tokens. Defaults to matching by symbol. */
+  classify?: (transfer: Pick<Transfer, "assetId" | "symbol">) => Kind;
 }
 
 export interface Reconstruction {
@@ -32,13 +36,13 @@ export interface Reconstruction {
   untracked: number;
 }
 
-type Kind = "usd" | "eth" | "token";
+export type Kind = "usd" | "native" | "token";
 
 const STABLE = /^(USDC(\.E)?|USDT0?|USD₮0|DAI|USDS|USDG|PYUSD|FDUSD|USDE|LUSD|GUSD|TUSD)$/i;
 const DUST = 1e-9;
 
-function classify(transfer: Pick<Transfer, "assetId" | "symbol">): Kind {
-  if (transfer.assetId === "native" || /^w?eth$/i.test(transfer.symbol)) return "eth";
+function classifyBySymbol(transfer: Pick<Transfer, "assetId" | "symbol">): Kind {
+  if (transfer.assetId === "native" || /^w?eth$/i.test(transfer.symbol)) return "native";
   if (STABLE.test(transfer.symbol)) return "usd";
   return "token";
 }
@@ -62,10 +66,10 @@ interface Swap {
 
 /**
  * Rebuilds trades from raw token movements. A transaction counts as a swap
- * when the wallet moves one non-quote token against a stablecoin or ETH. The
+ * when the wallet moves one non-quote token against a stablecoin or the native coin. The
  * quote leg gives the dollar value. Realized P&L uses average cost per token.
  */
-export function reconstructTrades({ transfers, gas, ethUsd }: Input): Reconstruction {
+export function reconstructTrades({ transfers, gas, nativeUsd, classify = classifyBySymbol }: Input): Reconstruction {
   const byHash = new Map<string, Transfer[]>();
   for (const transfer of transfers) {
     const list = byHash.get(transfer.hash);
@@ -81,7 +85,7 @@ export function reconstructTrades({ transfers, gas, ethUsd }: Input): Reconstruc
     const legs = new Map<string, Leg>();
     for (const transfer of group) {
       const kind = classify(transfer);
-      // Every stablecoin is $1 and native ETH is the same asset as WETH, so each collapses to one leg.
+      // Every stablecoin is $1 and the native coin is the same asset as its wrapped form, so each collapses to one leg.
       const key = kind === "token" ? transfer.assetId : kind;
       const leg = legs.get(key) ?? { key, symbol: transfer.symbol, kind, net: 0 };
       leg.net += transfer.direction === "in" ? transfer.amount : -transfer.amount;
@@ -100,7 +104,7 @@ export function reconstructTrades({ transfers, gas, ethUsd }: Input): Reconstruc
 
     const quote = active
       .filter((leg) => leg.kind !== "token")
-      .reduce((total, leg) => total + (leg.kind === "usd" ? leg.net : leg.net * ethUsd(time)), 0);
+      .reduce((total, leg) => total + (leg.kind === "usd" ? leg.net : leg.net * nativeUsd(time)), 0);
     if (Math.abs(quote) < DUST) continue;
 
     const token = tokens[0];
@@ -175,7 +179,7 @@ export function reconstructTrades({ transfers, gas, ethUsd }: Input): Reconstruc
   // Gas rides on the swap it paid for. Gas for approvals, transfers and failed
   // transactions has no swap to attach to, so it becomes a fee-only fill.
   const feeByHash = new Map<string, number>();
-  for (const cost of gas) feeByHash.set(cost.hash, (feeByHash.get(cost.hash) ?? 0) + cost.eth * ethUsd(cost.time));
+  for (const cost of gas) feeByHash.set(cost.hash, (feeByHash.get(cost.hash) ?? 0) + cost.native * nativeUsd(cost.time));
 
   const attached = new Set<string>();
   for (const fill of fills) {

@@ -27,7 +27,7 @@ export function AddressForm({ variant = "hero", initialValue = "" }: AddressForm
       return;
     }
     if (!isValidAddress(address)) {
-      setError("That doesn't look like a valid address. It should start with 0x followed by 40 characters.");
+      setError("That doesn't look like a valid address. Use a Robinhood Chain address (0x followed by 40 characters) or a Solana address.");
       return;
     }
 
@@ -49,7 +49,7 @@ export function AddressForm({ variant = "hero", initialValue = "" }: AddressForm
             setValue(event.target.value);
             if (error) setError(null);
           }}
-          placeholder={variant === "compact" ? "0x… wallet address" : "0x… paste a Robinhood Chain wallet address"}
+          placeholder={variant === "compact" ? "Wallet address" : "Paste a Robinhood Chain or Solana wallet address"}
           autoComplete="off"
           autoCapitalize="off"
           autoCorrect="off"

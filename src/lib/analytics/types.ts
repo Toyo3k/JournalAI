@@ -182,7 +182,7 @@ export interface StockContext {
 
 export interface WalletReport {
   subject: Subject;
-  source: "robinhood" | "demo" | "journal";
+  source: "robinhood" | "solana" | "demo" | "journal";
   capabilities: Capabilities;
   /** Source-specific caveats worth showing next to the numbers. */
   notes: string[];

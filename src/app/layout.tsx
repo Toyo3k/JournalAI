@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
   title: { default: "NeuroX. Trading insights from any wallet", template: "%s | NeuroX" },
   description:
-    "Paste a Robinhood Chain wallet address and get a clear, data-backed review of its trading history: win rate, gas costs, drawdown, and the habits costing or making money.",
+    "Paste a Robinhood Chain or Solana wallet address and get a clear, data-backed review of its trading history: win rate, gas costs, drawdown, and the habits costing or making money.",
 };
 
 export const viewport: Viewport = {

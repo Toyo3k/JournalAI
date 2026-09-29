@@ -26,7 +26,7 @@ export function CompareForm({ initialA = "", initialB = "" }: { initialA?: strin
     const second = normaliseAddress(b);
 
     if (!first || !second) return setError("Enter two wallet addresses to compare.");
-    if (!accepted(first) || !accepted(second)) return setError("Both entries must be a full wallet address starting with 0x, or a sample like demo.");
+    if (!accepted(first) || !accepted(second)) return setError("Both entries must be a full Robinhood Chain or Solana wallet address, or a sample like demo.");
     if (first === second) return setError("Pick two different wallets.");
 
     setError(null);
@@ -40,7 +40,7 @@ export function CompareForm({ initialA = "", initialB = "" }: { initialA?: strin
           <label htmlFor={idA}>
             <i /> Wallet A
           </label>
-          <input id={idA} value={a} onChange={(e) => setA(e.target.value)} placeholder="0x… address" className="mono" autoComplete="off" spellCheck={false} />
+          <input id={idA} value={a} onChange={(e) => setA(e.target.value)} placeholder="Wallet address" className="mono" autoComplete="off" spellCheck={false} />
         </div>
         <button
           type="button"
@@ -57,7 +57,7 @@ export function CompareForm({ initialA = "", initialB = "" }: { initialA?: strin
           <label htmlFor={idB}>
             <i /> Wallet B
           </label>
-          <input id={idB} value={b} onChange={(e) => setB(e.target.value)} placeholder="0x… address" className="mono" autoComplete="off" spellCheck={false} />
+          <input id={idB} value={b} onChange={(e) => setB(e.target.value)} placeholder="Wallet address" className="mono" autoComplete="off" spellCheck={false} />
         </div>
       </div>
       {error ? (

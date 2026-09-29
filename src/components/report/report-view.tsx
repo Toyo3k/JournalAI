@@ -44,7 +44,7 @@ interface ReportViewProps {
   extra?: React.ReactNode;
 }
 
-const BADGES = { demo: "Sample data", journal: "Local journal", robinhood: "Robinhood Chain" } as const;
+const BADGES = { demo: "Sample data", journal: "Local journal", robinhood: "Robinhood Chain", solana: "Solana" } as const;
 
 export function ReportView({ report, right, actions, hideHeader = false, hideRecent = false, extra }: ReportViewProps) {
   const { summary, capabilities, subject } = report;
@@ -85,7 +85,9 @@ export function ReportView({ report, right, actions, hideHeader = false, hideRec
       ) : null}
       {report.truncated ? (
         <p className={styles.notice} data-tone="warn">
-          This wallet has more activity than we load at once, so the figures below cover its earliest transactions only, up to {formatDate(summary.lastFillAt)}.
+          {report.source === "solana"
+            ? `This wallet has more activity than we load at once, so the figures below cover its most recent transactions only, from ${formatDate(summary.firstFillAt)}.`
+            : `This wallet has more activity than we load at once, so the figures below cover its earliest transactions only, up to ${formatDate(summary.lastFillAt)}.`}
         </p>
       ) : null}
       {report.notes.map((note) => (

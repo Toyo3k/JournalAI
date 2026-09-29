@@ -4,7 +4,7 @@ import { reconstructTrades } from "./swaps";
 import type { Transfer } from "./swaps";
 
 const HOUR = 3_600_000;
-const ethUsd = () => 2000;
+const nativeUsd = () => 2000;
 
 const move = (hash: string, time: number, symbol: string, amount: number, direction: "in" | "out", assetId = symbol.toLowerCase()): Transfer => ({
   hash,
@@ -18,7 +18,7 @@ const move = (hash: string, time: number, symbol: string, amount: number, direct
 describe("reconstructTrades", () => {
   it("values a stablecoin swap and realizes P&L against average cost", () => {
     const { fills, swaps } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [
         move("0xa", HOUR, "USDC", 1000, "out"),
@@ -36,7 +36,7 @@ describe("reconstructTrades", () => {
 
   it("prices ETH legs, treating native ETH and WETH as one asset", () => {
     const { fills } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [
         move("0xa", HOUR, "ETH", 1, "out", "native"),
@@ -52,7 +52,7 @@ describe("reconstructTrades", () => {
 
   it("uses average cost across several buys and reduces the position proportionally", () => {
     const { fills } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [
         move("0x1", HOUR, "USDC", 100, "out"),
@@ -70,7 +70,7 @@ describe("reconstructTrades", () => {
 
   it("dates each sale by the oldest shares it sold, using first in first out", () => {
     const { fills } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [
         move("0x1", 1 * HOUR, "USDC", 100, "out"),
@@ -95,7 +95,7 @@ describe("reconstructTrades", () => {
 
   it("records the contract address so stock tokens can be identified", () => {
     const { fills } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [move("0x1", HOUR, "USDC", 100, "out"), move("0x1", HOUR, "TSLA", 1, "in", "0xabc")],
     });
@@ -104,7 +104,7 @@ describe("reconstructTrades", () => {
 
   it("ignores wraps, plain transfers and stable-to-ETH conversions", () => {
     const { fills, swaps } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [
         move("0xwrap", HOUR, "ETH", 1, "out", "native"),
@@ -121,7 +121,7 @@ describe("reconstructTrades", () => {
 
   it("counts token-to-token swaps as skipped rather than guessing a price", () => {
     const { fills, skipped } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [move("0xa", HOUR, "AAA", 5, "out"), move("0xa", HOUR, "BBB", 9, "in")],
     });
@@ -132,7 +132,7 @@ describe("reconstructTrades", () => {
 
   it("leaves out sales that have no earlier purchase", () => {
     const { fills, untracked } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [move("0xa", HOUR, "OLD", 10, "out"), move("0xa", HOUR, "USDC", 500, "in")],
     });
@@ -143,7 +143,7 @@ describe("reconstructTrades", () => {
 
   it("only realizes the tracked part of a sale larger than the known position", () => {
     const { fills } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       gas: [],
       transfers: [
         move("0x1", HOUR, "USDC", 100, "out"),
@@ -160,11 +160,11 @@ describe("reconstructTrades", () => {
 
   it("attaches gas to its swap and turns other gas into fee-only fills", () => {
     const { fills } = reconstructTrades({
-      ethUsd,
+      nativeUsd,
       transfers: [move("0xa", HOUR, "USDC", 100, "out"), move("0xa", HOUR, "XYZ", 10, "in")],
       gas: [
-        { hash: "0xa", time: HOUR, eth: 0.001 },
-        { hash: "0xapprove", time: HOUR / 2, eth: 0.0005 },
+        { hash: "0xa", time: HOUR, native: 0.001 },
+        { hash: "0xapprove", time: HOUR / 2, native: 0.0005 },
       ],
     });
 

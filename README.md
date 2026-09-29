@@ -1,6 +1,6 @@
 # NeuroX
 
-Paste a Robinhood Chain wallet address and get a data-backed review of its trading history: net P&L after gas, win
+Paste a Robinhood Chain or Solana wallet address and get a data-backed review of its trading history: net P&L after gas, win
 rate, profit factor, drawdown, and plain-language insights about the habits that make or cost money. There is also a
 private trade journal that keeps everything in your browser.
 
@@ -12,10 +12,13 @@ Everything is read-only. There is no wallet connection and nothing to sign.
 pnpm install
 ```
 
-Add your Etherscan API key to `.env.local` (free at https://etherscan.io/apis, Robinscan runs on it):
+Add your API keys to `.env.local`. Etherscan (free at https://etherscan.io/apis, Robinscan runs on it) is for Robinhood
+Chain wallets, and Helius (free at https://dashboard.helius.dev) is for Solana wallets. Either one alone is enough for
+its own chain.
 
 ```
 ETHERSCAN_API_KEY=your_key_here
+HELIUS_API_KEY=your_key_here
 ```
 
 ```bash
@@ -70,7 +73,7 @@ because it only covers about two months.
 | `pnpm typecheck` | TypeScript, no emit        |
 | `pnpm test`      | Unit tests (Vitest)        |
 
-`COINGECKO_API_KEY` is optional and raises the rate limit on the ETH/USD prices used to value swaps. See
+`COINGECKO_API_KEY` is optional and raises the rate limit on the ETH/USD and SOL/USD prices used to value swaps. See
 `.env.example`.
 
 ## Wallet reports
@@ -91,6 +94,26 @@ P&L uses average cost. Gas is included as a fee. Things to know:
   dataset is cut to the same moment so swaps stay whole, and the report says so. Normal wallets are complete.
 - Reports are cached in memory by address for five minutes. Next's own fetch cache is not used for Etherscan, because
   it is keyed by URL and the URL contains your API key.
+
+## Solana wallets
+
+The same `/wallet/[address]` route takes Solana addresses. The chain is told apart by format: `0x` followed by 40 hex
+characters is Robinhood Chain, and 32 to 44 base58 characters is Solana. Solana addresses are case-sensitive, so they
+are not lowercased. `/compare` accepts either, including one of each.
+
+History comes from Helius' enhanced transactions API (`src/lib/solana`), and swaps are rebuilt by the same code as
+Robinhood Chain. Differences worth knowing:
+
+- Trades come from each transaction's **balance changes**, not its transfer list. Solana swaps usually wrap SOL into a
+  temporary account and unwrap it again, which lists several transfers for one real change. Wrapped SOL counts as SOL.
+- Stablecoins (USDC, USDT, PYUSD) are matched **by mint address**, so a counterfeit token named USDC is not valued at
+  $1. SOL is valued at its daily CoinGecko price, and the transaction fee (priority fee included) is counted as gas.
+- Rent for a new token account (about 0.002 SOL) counts as part of the purchase, and rent returned when an account is
+  closed counts toward the sale. Tips such as Jito tips count as part of the swap.
+- Token symbols come from Helius' DAS API and are labels only. If they cannot be loaded, a shortened mint is shown.
+- History is capped at 2,000 transactions, **newest first**, so a very busy wallet shows its recent trading. Sales of
+  tokens bought before that window have no cost basis and are left out, and the report says so.
+- There is no stock token section, since Robinhood stock tokens are not on Solana.
 
 ## Private journal
 
@@ -126,7 +149,8 @@ src/
     share/                Share card image and share buttons
     ui/                   Small shared primitives
   lib/
-    robinhood/            Etherscan client, ETH prices, swap reconstruction, stock token registry
+    robinhood/            Etherscan client, USD prices, swap reconstruction, stock token registry
+    solana/               Helius client and Solana balance changes
     analytics/            Fills -> trades -> metrics -> insights, plus holding, risk, stock context and comparison
     journal/              Entry types, storage, CSV parser, behaviour patterns
     demo/                 Deterministic sample data generator
@@ -136,7 +160,8 @@ src/
 
 ## How the analysis works
 
-1. **Fetch** the wallet's transactions, internal transactions and token transfers from Etherscan.
+1. **Fetch** the wallet's transactions, internal transactions and token transfers from Etherscan, or its transactions
+   from Helius for Solana.
 2. **Reconstruct** swaps and realize P&L against average cost (`src/lib/robinhood/swaps.ts`).
 3. **Group** closing fills from the same transaction into one trade.
 4. **Measure** P&L, win rate, profit factor, expectancy, drawdown, streaks, and breakdowns by token, hour and weekday.

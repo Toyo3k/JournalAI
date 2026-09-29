@@ -26,7 +26,7 @@ function toTransfers(address: string, normal: Row[], internal: Row[], tokens: Ro
   for (const row of normal) {
     native(row);
     if (row.from?.toLowerCase() === me) {
-      gas.push({ hash: row.hash, time: num(row.timeStamp) * 1000, eth: (num(row.gasUsed) * num(row.gasPrice)) / 1e18 });
+      gas.push({ hash: row.hash, time: num(row.timeStamp) * 1000, native: (num(row.gasUsed) * num(row.gasPrice)) / 1e18 });
     }
   }
   for (const row of internal) native(row);
@@ -72,7 +72,7 @@ export async function loadRobinhood(address: string): Promise<SourceData> {
 
   const times = [...transfers.map((t) => t.time), ...gas.map((g) => g.time)];
   const ethUsd = await fetchEthUsd(Math.min(...times), Date.now());
-  const result = reconstructTrades({ transfers, gas, ethUsd });
+  const result = reconstructTrades({ transfers, gas, nativeUsd: ethUsd });
 
   if (!result.swaps && !result.fills.length && (normal.rows.length || tokens.rows.length)) {
     throw new SourceError(

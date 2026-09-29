@@ -110,7 +110,7 @@ export function ReportCard({ report, logo }: { report: WalletReport; logo: Buffe
   const { summary } = report;
   const positive = summary.netPnl >= 0;
   const tone = positive ? COLORS.gain : COLORS.loss;
-  const badge = report.source === "demo" ? "Sample data" : "Robinhood Chain";
+  const badge = report.source === "demo" ? "Sample data" : report.source === "solana" ? "Solana" : "Robinhood Chain";
 
   return (
     <div
@@ -175,7 +175,7 @@ export function BrandCard({ title, subtitle, logo }: { title: string; subtitle: 
         <div style={{ display: "flex", fontSize: 84, lineHeight: 1.05, fontWeight: 800, letterSpacing: -2.5, color: COLORS.text }}>{title}</div>
         <div style={{ display: "flex", fontSize: 32, color: COLORS.muted }}>{subtitle}</div>
       </div>
-      <div style={{ display: "flex", fontSize: 24, color: COLORS.dim }}>Robinhood Chain wallet analytics</div>
+      <div style={{ display: "flex", fontSize: 24, color: COLORS.dim }}>On-chain wallet analytics</div>
     </div>
   );
 }

@@ -7,12 +7,12 @@ import styles from "@/components/compare/compare.module.css";
 import { isValidAddress, normaliseAddress } from "@/lib/address";
 import { compareReports } from "@/lib/analytics/compare";
 import { shortenAddress } from "@/lib/format";
-import { isDemoId, loadDemoReport, loadWalletReport } from "@/lib/report";
+import { isDemoId, loadDemoReport, loadWalletReport, setupProblem } from "@/lib/report";
 import { SourceError } from "@/lib/robinhood/types";
 
 export const metadata: Metadata = {
   title: "Compare wallets",
-  description: "Put two Robinhood Chain wallets side by side: returns, win rate, drawdown and habits.",
+  description: "Put two Robinhood Chain or Solana wallets side by side: returns, win rate, drawdown and habits.",
 };
 
 type Loaded = { side: Side } | { error: string };
@@ -23,7 +23,8 @@ async function load(raw: string): Promise<Loaded> {
   if (isDemoId(raw)) return { side: { report: loadDemoReport(raw), label: DEMO_LABELS[raw], href: "/demo" } };
 
   if (!isValidAddress(raw)) return { error: `${raw.slice(0, 24) || "That entry"} is not a valid wallet address.` };
-  if (!process.env.ETHERSCAN_API_KEY) return { error: "Robinhood Chain isn't set up yet. Add ETHERSCAN_API_KEY to .env.local and restart." };
+  const problem = setupProblem(raw);
+  if (problem) return { error: `${problem.title}. ${problem.message}` };
 
   try {
     const loaded = await loadWalletReport(raw);
@@ -43,7 +44,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const wanted = Boolean(a && b);
   const same = wanted && a === b;
 
-  // Both wallets load together. The shared Etherscan queue keeps that inside the rate limit.
+  // Both wallets load together. The shared Etherscan and Helius queues keep that inside the rate limits.
   const [first, second] = wanted && !same ? await Promise.all([load(a), load(b)]) : [null, null];
   const errors = [first, second].flatMap((result) => (result && "error" in result ? [result.error] : []));
   const ready = first && second && "side" in first && "side" in second ? { a: first.side, b: second.side } : null;

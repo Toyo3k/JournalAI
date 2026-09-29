@@ -28,8 +28,8 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { title: "Paste an address", body: "Any wallet that has traded on Robinhood Chain. No signup, no wallet connection." },
-  { title: "We read the public history", body: "Token transfers are pulled read-only from Etherscan and rebuilt into swaps, priced in USD." },
+  { title: "Paste an address", body: "Any wallet that has traded on Robinhood Chain or Solana. No signup, no wallet connection." },
+  { title: "We read the public history", body: "Token movements are pulled read-only from Etherscan or Helius and rebuilt into swaps, priced in USD." },
   { title: "Get your review", body: "Grouped into closed trades and turned into metrics, charts and plain-language insights." },
 ];
 
@@ -39,13 +39,13 @@ export default function HomePage() {
       <section className={styles.hero}>
         <div className={`container ${styles.heroInner}`}>
           <span className={styles.pill}>
-            <i /> Robinhood Chain. Read-only, from public data
+            <i /> Robinhood Chain and Solana. Read-only, from public data
           </span>
           <h1 className={styles.title}>
             Understand your trading, <em>from a wallet address.</em>
           </h1>
           <p className={styles.lede}>
-            Paste a Robinhood Chain wallet and get a clear review of its trading history: what it made, what it paid, and
+            Paste a Robinhood Chain or Solana wallet and get a clear review of its trading history: what it made, what it paid, and
             the habits behind the results.
           </p>
           <div className={styles.formWrap}>
