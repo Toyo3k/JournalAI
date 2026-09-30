@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { AddressForm } from "@/components/home/address-form";
+import { FumbleSection, FumbleSkeleton } from "@/components/report/fumbles";
 import { ReportError } from "@/components/report/report-error";
 import { ReportView } from "@/components/report/report-view";
 import { ShareBar } from "@/components/share/share-bar";
@@ -57,6 +59,11 @@ export default async function WalletPage({ params }: PageProps) {
       report={report}
       right={<AddressForm variant="compact" initialValue={address} />}
       actions={<ShareBar compareHref={`/compare?a=${address}`} name={address.slice(0, 10)} />}
+      fumbles={
+        <Suspense fallback={<FumbleSkeleton />}>
+          <FumbleSection addresses={[address]} />
+        </Suspense>
+      }
     />
   );
 }

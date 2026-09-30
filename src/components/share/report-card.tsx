@@ -11,15 +11,16 @@ import { formatDate, formatPercent, formatRatio, formatUsd, pluralise } from "@/
 export const CARD_SIZE = { width: 1200, height: 630 };
 
 const COLORS = {
-  bg: "#08090c",
-  surface: "#0e1015",
-  border: "#252a36",
-  text: "#eceef3",
-  muted: "#868da0",
-  dim: "#5a6072",
-  accent: "#a3adff",
-  gain: "#38d39f",
-  loss: "#f47174",
+  // The app palette, taken from the NeuroX logo.
+  bg: "#05070b",
+  surface: "#0d121b",
+  border: "#23324d",
+  text: "#eef3ff",
+  muted: "#7d8aa5",
+  dim: "#6e7a94",
+  accent: "#4aa8ff",
+  gain: "#2fe0a4",
+  loss: "#ff6b7a",
 };
 
 const BASE = { display: "flex", fontFamily: "sans-serif" } as const;
@@ -121,7 +122,7 @@ export function ReportCard({ report, logo }: { report: WalletReport; logo: Buffe
         flexDirection: "column",
         justifyContent: "space-between",
         padding: 48,
-        background: `radial-gradient(90% 70% at 15% 0%, rgba(133,146,255,0.16), ${COLORS.bg} 70%)`,
+        background: `radial-gradient(90% 70% at 15% 0%, rgba(31,139,255,0.18), ${COLORS.bg} 70%)`,
         color: COLORS.text,
       }}
     >
@@ -167,7 +168,7 @@ export function BrandCard({ title, subtitle, logo }: { title: string; subtitle: 
         flexDirection: "column",
         justifyContent: "space-between",
         padding: 64,
-        background: `radial-gradient(90% 80% at 20% 0%, rgba(133,146,255,0.2), ${COLORS.bg} 70%)`,
+        background: `radial-gradient(90% 80% at 20% 0%, rgba(31,139,255,0.22), ${COLORS.bg} 70%)`,
       }}
     >
       <Brand logo={logo} />

@@ -12,9 +12,10 @@ export function entriesToFills(entries: JournalEntry[]): Fill[] {
     // Position size is stored as the notional, so price x size equals the dollar size.
     price: entry.size,
     size: entry.size > 0 ? 1 : 0,
-    isBuy: entry.direction === "Short",
+    isBuy: false,
     time: Date.parse(entry.date),
-    dir: `Close ${entry.direction}`,
+    // Every journal trade is a buy then a sell, so it closes a long.
+    dir: "Close Long",
     closedPnl: entry.pnl,
     fee: 0,
     orderId: entry.id,
@@ -27,7 +28,7 @@ export function buildJournalReport(entries: JournalEntry[]): { report: WalletRep
     subject: { id: "journal", label: "My journal", kind: "handle" },
     source: "journal",
     fills: entriesToFills(entries),
-    capabilities: { shorts: true, fees: false },
+    capabilities: { shorts: false, fees: false },
     notes: [],
     extraInsights: patterns.insights,
   });

@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import type { FormEvent } from "react";
 import { parseMoney } from "@/lib/journal/csv";
 import { newId } from "@/lib/journal/storage";
-import { DIRECTIONS, EMOTIONS, RULES, SETUPS } from "@/lib/journal/types";
+import { EMOTIONS, RULES, SETUPS } from "@/lib/journal/types";
 import type { JournalEntry } from "@/lib/journal/types";
 import styles from "./journal.module.css";
 
@@ -22,7 +22,6 @@ interface TradeFormProps {
 export function TradeForm({ onSave, onCancel }: TradeFormProps) {
   const id = useId();
   const [asset, setAsset] = useState("");
-  const [direction, setDirection] = useState<string>(DIRECTIONS[0]);
   const [pnl, setPnl] = useState("");
   const [size, setSize] = useState("");
   const [setup, setSetup] = useState<string>(SETUPS[0]);
@@ -38,7 +37,7 @@ export function TradeForm({ onSave, onCancel }: TradeFormProps) {
     const notional = size.trim() ? Math.abs(parseMoney(size)) : 0;
     const closedAt = new Date(date);
 
-    if (!asset.trim()) return setError("Add a ticker or market.");
+    if (!asset.trim()) return setError("Add the token you traded.");
     if (!Number.isFinite(value)) return setError("Enter the realized P&L as a number, for example 245.50 or -80.");
     if (!Number.isFinite(notional)) return setError("Position size should be a number, or leave it empty.");
     if (Number.isNaN(closedAt.getTime())) return setError("Choose when the trade was closed.");
@@ -46,7 +45,6 @@ export function TradeForm({ onSave, onCancel }: TradeFormProps) {
     const saved = onSave({
       id: newId(),
       asset: asset.trim().toUpperCase(),
-      direction: direction as JournalEntry["direction"],
       pnl: value,
       size: notional,
       setup,
@@ -71,16 +69,8 @@ export function TradeForm({ onSave, onCancel }: TradeFormProps) {
     <form className={styles.form} onSubmit={submit} noValidate>
       <div className={styles.grid}>
         <div className={styles.field}>
-          <label htmlFor={field("asset")}>Asset or ticker</label>
-          <input id={field("asset")} value={asset} onChange={(e) => setAsset(e.target.value)} placeholder="e.g. BTC, NVDA, ES" autoComplete="off" />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor={field("direction")}>Direction</label>
-          <select id={field("direction")} value={direction} onChange={(e) => setDirection(e.target.value)}>
-            {DIRECTIONS.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
+          <label htmlFor={field("asset")}>Token</label>
+          <input id={field("asset")} value={asset} onChange={(e) => setAsset(e.target.value)} placeholder="e.g. BONK, WIF, FAITH" autoComplete="off" />
         </div>
         <div className={styles.field}>
           <label htmlFor={field("pnl")}>Realized P&amp;L (USD)</label>

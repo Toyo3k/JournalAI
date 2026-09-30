@@ -42,7 +42,7 @@ export function CsvImport({ onImport, onCancel }: CsvImportProps) {
     <div className={styles.importer}>
       <p className={styles.help}>
         Your file is read in this browser and never uploaded. It needs a <b>ticker</b> column (symbol, ticker, asset) and a{" "}
-        <b>realized P&amp;L</b> column (pnl, profit, net pnl). These are optional: side, size, setup, emotion, rules, notes, date.
+        <b>realized P&amp;L</b> column (pnl, profit, net pnl). These are optional: size, setup, emotion, rules, notes, date.
       </p>
       <label htmlFor={inputId} className="sr-only">
         CSV file

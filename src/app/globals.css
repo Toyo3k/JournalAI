@@ -1,30 +1,43 @@
+/*
+ * Palette taken from the NeuroX logo: electric blue, cyan glow and white chrome on a
+ * blue-tinted near-black. Lines are translucent blue rather than grey.
+ */
 :root {
-  --bg: #08090c;
-  --surface: #0e1015;
-  --surface-2: #14171e;
-  --surface-3: #1a1e27;
-  --border: #1f232d;
-  --border-strong: #2b303c;
-  --text: #eceef3;
-  --text-2: #b4bacb;
-  --muted: #868da0;
-  --dim: #5a6072;
-  --accent: #8592ff;
-  --accent-strong: #a3adff;
-  --accent-soft: rgb(133 146 255 / 0.12);
-  --gain: #38d39f;
-  --gain-soft: rgb(56 211 159 / 0.12);
-  --loss: #f47174;
-  --loss-soft: rgb(244 113 116 / 0.12);
-  --caution: #f2b84b;
-  --caution-soft: rgb(242 184 75 / 0.12);
-  --series-a: #8592ff;
+  --bg: #05070b;
+  --bg-raised: #0a0e15;
+  --surface: #0d121b;
+  --surface-2: #121926;
+  --surface-3: #182133;
+  --border: rgb(120 160 255 / 0.1);
+  --border-strong: rgb(120 160 255 / 0.2);
+  --text: #eef3ff;
+  --text-2: #b8c4dc;
+  --muted: #7d8aa5;
+  /* 4.7:1 on --bg, so it passes WCAG AA for body text. */
+  --dim: #6e7a94;
+  --accent: #1f8bff;
+  --accent-strong: #4aa8ff;
+  --accent-soft: rgb(31 139 255 / 0.12);
+  --cyan: #5fd8ff;
+  --electric: linear-gradient(135deg, #1f8bff 0%, #5fd8ff 100%);
+  --glow: 0 0 30px -6px rgb(31 139 255 / 0.8);
+  --on-accent: #031022;
+  --gain: #2fe0a4;
+  --gain-soft: rgb(47 224 164 / 0.12);
+  --loss: #ff6b7a;
+  --loss-soft: rgb(255 107 122 / 0.12);
+  --caution: #ffc05c;
+  --caution-soft: rgb(255 192 92 / 0.12);
+  --series-a: #4aa8ff;
   --series-b: #f08bc4;
-  --radius: 14px;
-  --radius-sm: 9px;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-lg: 20px;
   --container: 1180px;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-mono-face), ui-monospace, "SF Mono", Menlo, monospace;
+  /* Wide display face echoing the logo's extended wordmark. */
+  --font-display: var(--font-nx-display), var(--font-inter), system-ui, sans-serif;
   color-scheme: dark;
 }
 
@@ -57,7 +70,7 @@ button { cursor: pointer; }
 table { border-collapse: collapse; width: 100%; }
 
 :focus-visible {
-  outline: 2px solid var(--accent-strong);
+  outline: 2px solid var(--cyan);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -73,6 +86,27 @@ table { border-collapse: collapse; width: 100%; }
 .num { font-variant-numeric: tabular-nums; }
 .pos { color: var(--gain); }
 .neg { color: var(--loss); }
+
+/* Big P&L numerals: display face, white into the result colour. */
+.pnl-gradient {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  background: linear-gradient(180deg, #ffffff, #8ff3c9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.pnl-gradient[data-tone="loss"] { background-image: linear-gradient(180deg, #ffffff, #ffb0b8); }
+
+/* Section titles in wide-tracked display caps, like the wordmark. */
+.section-title {
+  font: 600 13px var(--font-display);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 
 .sr-only {
   position: absolute;
@@ -110,10 +144,15 @@ table { border-collapse: collapse; width: 100%; }
     --caution: #a86b00;
     --series-a: #4a56d6;
     --series-b: #c2337f;
+    --cyan: #0b7fae;
     color-scheme: light;
   }
 
   body { font-size: 12px; }
-  header, footer, .no-print { display: none !important; }
+  /* Only the site's own header and footer. Report and panel headers carry content. */
+  body > header, body > footer, .no-print { display: none !important; }
   .container { width: 100%; }
+  /* White-to-mint text would vanish on paper. */
+  .pnl-gradient { background: none; color: var(--gain); }
+  .pnl-gradient[data-tone="loss"] { color: var(--loss); }
 }

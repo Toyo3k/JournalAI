@@ -35,7 +35,7 @@ export function EntriesTable({ entries, onRemove }: { entries: JournalEntry[]; o
               <tr key={entry.id}>
                 <td className={`${report.dim} num`}>{formatDateTime(Date.parse(entry.date))}</td>
                 <th scope="row" className={report.coin}>
-                  {entry.asset} <span className={report.side} data-side={entry.direction}>{entry.direction}</span>
+                  {entry.asset}
                   {entry.notes ? <span className={styles.entryNote} title={entry.notes}>{entry.notes}</span> : null}
                 </th>
                 <td>{entry.setup || "n/a"}</td>

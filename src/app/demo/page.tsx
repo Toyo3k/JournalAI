@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AddressForm } from "@/components/home/address-form";
+import { FumbleSection } from "@/components/report/fumbles";
 import { ReportView } from "@/components/report/report-view";
 import { ShareBar } from "@/components/share/share-bar";
 import { loadDemoReport } from "@/lib/report";
@@ -12,6 +13,7 @@ export default function DemoPage() {
       report={loadDemoReport()}
       right={<AddressForm variant="compact" />}
       actions={<ShareBar compareHref="/compare?a=demo&b=demo-2" name="sample" />}
+      fumbles={<FumbleSection demo="demo" />}
     />
   );
 }

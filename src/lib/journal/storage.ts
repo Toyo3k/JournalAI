@@ -1,5 +1,4 @@
 import type { JournalEntry } from "./types";
-import { DIRECTIONS } from "./types";
 
 export const STORAGE_KEY = "neurox.journal.v1";
 /** The key used before the NeuroX rename. Entries under it are copied forward once and never deleted. */
@@ -29,8 +28,7 @@ function isEntry(value: unknown): value is JournalEntry {
     typeof entry.pnl === "number" &&
     Number.isFinite(entry.pnl) &&
     typeof entry.date === "string" &&
-    !Number.isNaN(Date.parse(entry.date)) &&
-    DIRECTIONS.includes(entry.direction as (typeof DIRECTIONS)[number])
+    !Number.isNaN(Date.parse(entry.date))
   );
 }
 
@@ -40,7 +38,8 @@ export function parseEntries(raw: string | null): JournalEntry[] {
   try {
     const data: unknown = JSON.parse(raw);
     if (!Array.isArray(data)) return [];
-    return data.filter(isEntry).map((entry) => ({
+    // Entries saved before the journal dropped long/short still carry a direction. It is left behind here.
+    return data.filter(isEntry).map(({ direction: _direction, ...entry }: JournalEntry & { direction?: unknown }) => ({
       ...entry,
       size: Number.isFinite(entry.size) ? entry.size : 0,
       setup: entry.setup ?? "",

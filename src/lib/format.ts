@@ -26,6 +26,19 @@ export function formatUsd(value: number, options: { signed?: boolean; compact?: 
   return options.signed && value > 0 ? `+${text}` : text;
 }
 
+/** A per-token price, keeping three significant figures for tiny memecoin prices like $0.0000412. */
+export function formatTokenPrice(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "$0";
+  if (value >= 1) return formatUsd(value);
+  const digits = Math.min(12, 2 - Math.floor(Math.log10(value)));
+  return `$${value.toFixed(digits)}`;
+}
+
+/** A "3.4x" style multiple. */
+export function formatMultiple(value: number): string {
+  return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)}x`;
+}
+
 export function formatPercent(fraction: number, digits = 1): string {
   return `${(fraction * 100).toFixed(digits)}%`;
 }

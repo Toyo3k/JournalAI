@@ -65,10 +65,27 @@ function normaliseRules(value: string): string {
   return NOT_RECORDED;
 }
 
+/** Common ways a spreadsheet names each setup, checked after an exact match. */
+const SETUP_ALIASES: [RegExp, (typeof SETUPS)[number]][] = [
+  [/launch|snipe|fresh|new pair|bonding/, "New launch"],
+  [/kol|call|influencer|alpha|shill/, "KOL / call"],
+  [/dip|pullback|retrace/, "Dip buy"],
+  [/narrative|meta|theme/, "Narrative play"],
+  [/volume|spike|pump/, "Volume spike"],
+];
+
+function normaliseSetup(value: string): string {
+  const text = value.trim();
+  if (!text) return UNSPECIFIED;
+  const exact = canonical(text, SETUPS);
+  if (exact) return exact;
+  // Anything unrecognised is kept as written, so a custom setup still gets its own group.
+  return SETUP_ALIASES.find(([pattern]) => pattern.test(text.toLowerCase()))?.[1] ?? text;
+}
+
 const HEADERS = {
   asset: ["symbol", "ticker", "asset", "market", "coin", "instrument"],
   pnl: ["realizedpnl", "realizedpl", "pnl", "pnlusd", "profitloss", "profit", "netpnl", "netpl", "netprofit", "pl", "result"],
-  side: ["side", "direction"],
   size: ["size", "notional", "positionsize", "value"],
   setup: ["setup", "strategy"],
   emotion: ["emotion", "feeling", "mood"],
@@ -121,10 +138,9 @@ export function importCsv(text: string, now = Date.now()): CsvImport {
     entries.push({
       id: newId(),
       asset,
-      direction: /short|sell/i.test(cell(row, "side")) ? "Short" : "Long",
       pnl,
       size: Number.isFinite(size) ? size : 0,
-      setup: canonical(cell(row, "setup"), SETUPS) ?? (cell(row, "setup").trim() || UNSPECIFIED),
+      setup: normaliseSetup(cell(row, "setup")),
       emotion: canonical(cell(row, "emotion"), EMOTIONS) ?? (cell(row, "emotion").trim() || UNSPECIFIED),
       rules: normaliseRules(cell(row, "rules")),
       notes: cell(row, "notes"),

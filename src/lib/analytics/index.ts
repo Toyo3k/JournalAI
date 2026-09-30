@@ -6,6 +6,8 @@ import { analyseStocks, stockInsights } from "./stocks";
 import type { StockRegistry } from "./stocks";
 import { buildEquity, buildTrades } from "./trades";
 import type { Capabilities, Fill, Insight, Subject, WalletReport } from "./types";
+import { buildScore, buildVerdict } from "./verdict";
+import { buildVisuals } from "./visuals";
 
 export type { WalletReport } from "./types";
 
@@ -35,6 +37,13 @@ export function buildReport({ subject, source, fills, capabilities, truncated = 
   const holding = analyseHolding(trades);
   const risk = analyseRisk(ordered, trades, summary, assets, hours);
   const stockContext = stocks ? analyseStocks(trades, stocks.registry, stocks.match) : null;
+  const insights = [
+    ...extraInsights,
+    ...generateInsights({ summary, trades, assets, sides, hours, capabilities }),
+    ...holdingInsights(holding),
+    ...stockInsights(stockContext),
+    ...riskInsights(risk, summary),
+  ];
 
   return {
     subject,
@@ -50,15 +59,12 @@ export function buildReport({ subject, source, fills, capabilities, truncated = 
     hours,
     weekdays: byWeekday(trades),
     recentTrades: trades.slice(-RECENT_TRADE_COUNT).reverse(),
-    insights: [
-      ...extraInsights,
-      ...generateInsights({ summary, trades, assets, sides, hours, capabilities }),
-      ...holdingInsights(holding),
-      ...stockInsights(stockContext),
-      ...riskInsights(risk, summary),
-    ],
+    insights,
     holding,
     risk,
     stocks: stockContext,
+    verdict: buildVerdict(summary, insights),
+    score: buildScore(summary, risk, insights),
+    visuals: buildVisuals(ordered, trades),
   };
 }

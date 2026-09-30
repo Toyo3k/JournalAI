@@ -23,10 +23,9 @@ function stubLocalStorage(seed: Record<string, string> = {}) {
 const entry = (overrides: Partial<JournalEntry>): JournalEntry => ({
   id: Math.random().toString(36).slice(2),
   asset: "BTC",
-  direction: "Long",
   pnl: 100,
   size: 0,
-  setup: "Breakout",
+  setup: "Dip buy",
   emotion: "Calm",
   rules: "Followed plan",
   notes: "",
@@ -64,15 +63,22 @@ describe("importCsv", () => {
   it("imports rows with flexible header names and normalises values", () => {
     const csv = [
       "Ticker,Net P&L,Side,Strategy,Feeling,Rule Adherence,Notes,Closed At",
-      'NVDA,"$1,200.50",sell,Breakout,fomo,Broke the rules,"chased, again",2026-08-03T10:00:00Z',
+      'BONK,"$1,200.50",sell,kol call,fomo,Broke the rules,"chased, again",2026-08-03T10:00:00Z',
       "eth,(80),Long,Custom setup,,yes,,2026-08-04",
     ].join("\n");
 
     const { entries, skipped } = importCsv(csv);
 
     expect(skipped).toBe(0);
-    expect(entries[0]).toMatchObject({ asset: "NVDA", pnl: 1200.5, direction: "Short", setup: "Breakout", emotion: "FOMO", rules: "Rule break", notes: "chased, again" });
+    expect(entries[0]).toMatchObject({ asset: "BONK", pnl: 1200.5, setup: "KOL / call", emotion: "FOMO", rules: "Rule break", notes: "chased, again" });
+    // A side column is ignored: journal trades have no long or short.
+    expect(entries[0]).not.toHaveProperty("direction");
     expect(entries[1]).toMatchObject({ asset: "ETH", pnl: -80, setup: "Custom setup", emotion: "Unspecified", rules: "Followed plan" });
+  });
+
+  it("recognises common names for the memecoin setups and keeps anything else as written", () => {
+    const csv = ["symbol,pnl,setup", "A,1,Sniped the launch", "B,1,dip BUY", "C,1,volume spike", "D,1,Breakout", "E,1,"].join("\n");
+    expect(importCsv(csv).entries.map((e) => e.setup)).toEqual(["New launch", "Dip buy", "Volume spike", "Breakout", "Unspecified"]);
   });
 
   it("counts rows without a ticker or a readable P&L as skipped", () => {
@@ -99,6 +105,12 @@ describe("parseEntries", () => {
     expect(parseEntries(null)).toEqual([]);
     expect(parseEntries("{not json")).toEqual([]);
     expect(parseEntries('{"a":1}')).toEqual([]);
+  });
+
+  it("loads entries saved with a long/short direction and leaves the direction behind", () => {
+    const [loaded] = parseEntries(JSON.stringify([{ ...entry({ id: "old" }), direction: "Short" }]));
+    expect(loaded.id).toBe("old");
+    expect(loaded).not.toHaveProperty("direction");
   });
 
   it("drops invalid entries but keeps valid ones", () => {
@@ -147,8 +159,8 @@ describe("migrateLegacyStorage", () => {
 
 describe("journal report", () => {
   it("turns entries into closing fills whose size is the recorded notional", () => {
-    const [fill] = entriesToFills([entry({ pnl: -50, size: 2000, direction: "Short" })]);
-    expect(fill).toMatchObject({ dir: "Close Short", closedPnl: -50, isBuy: true });
+    const [fill] = entriesToFills([entry({ pnl: -50, size: 2000 })]);
+    expect(fill).toMatchObject({ dir: "Close Long", closedPnl: -50, isBuy: false });
     expect(fill.price * fill.size).toBe(2000);
   });
 
@@ -156,7 +168,8 @@ describe("journal report", () => {
     const { report } = buildJournalReport([entry({ pnl: 100 }), entry({ pnl: -40 }), entry({ pnl: 60 })]);
     expect(report.summary.netPnl).toBe(120);
     expect(report.summary.tradeCount).toBe(3);
-    expect(report.capabilities).toEqual({ shorts: true, fees: false });
+    // No long vs short section: memecoin trades are only bought and sold.
+    expect(report.capabilities).toEqual({ shorts: false, fees: false });
   });
 });
 

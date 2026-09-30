@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { copyText } from "@/lib/clipboard";
 import styles from "./share.module.css";
 
 interface ShareBarProps {
@@ -33,31 +34,8 @@ export function ShareBar({ compareHref, name }: ShareBarProps) {
     timer.current = setTimeout(() => setStatus(null), 2500);
   }
 
-  /** Older browsers and some embedded views lack the async clipboard API, so fall back to a selection copy. */
-  function legacyCopy(text: string): boolean {
-    const field = document.createElement("textarea");
-    field.value = text;
-    field.setAttribute("readonly", "");
-    field.style.cssText = "position:fixed;top:0;left:0;opacity:0";
-    document.body.appendChild(field);
-    field.select();
-    try {
-      return document.execCommand("copy");
-    } catch {
-      return false;
-    } finally {
-      field.remove();
-    }
-  }
-
   async function copy() {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      announce("Link copied");
-    } catch {
-      announce(legacyCopy(url) ? "Link copied" : "Could not copy. Copy the address bar link instead.");
-    }
+    announce((await copyText(window.location.href)) ? "Link copied" : "Could not copy. Copy the address bar link instead.");
   }
 
   function openPreview() {

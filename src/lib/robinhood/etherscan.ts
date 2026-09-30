@@ -12,6 +12,10 @@ const PAGE_SIZE = 1000;
  */
 const MAX_PAGES = 3;
 const CALL_GAP_MS = 250;
+/** A call that takes longer than this has stalled. Without a limit the page would wait forever. */
+const CALL_TIMEOUT_MS = 20_000;
+const TIMED_OUT = "Etherscan took too long to respond. Try again in a minute.";
+const timedOut = (error: unknown) => error instanceof DOMException && error.name === "TimeoutError";
 
 // Every Etherscan call in this process goes through one queue, so two wallets
 // loading at once (a comparison, or a page plus its share card) stay inside
@@ -37,13 +41,20 @@ async function request(params: Record<string, string>, attempt = 0): Promise<Row
   try {
     // Not cached by Next: responses can exceed its 2MB limit, and its cache logs the full URL, API key included.
     // Finished reports are cached in memory by address instead (see report.ts).
-    response = await fetch(`${BASE}?${query}`, { cache: "no-store" });
-  } catch {
+    response = await fetch(`${BASE}?${query}`, { cache: "no-store", signal: AbortSignal.timeout(CALL_TIMEOUT_MS) });
+  } catch (error) {
+    if (timedOut(error)) throw new SourceError(TIMED_OUT);
     throw new SourceError("Could not reach Etherscan. Check your connection and try again.");
   }
   if (!response.ok) throw new SourceError(`Etherscan returned an error (${response.status}).`);
 
-  const body = (await response.json()) as { status?: string; message?: string; result?: unknown };
+  let body: { status?: string; message?: string; result?: unknown };
+  try {
+    body = (await response.json()) as typeof body;
+  } catch (error) {
+    if (timedOut(error)) throw new SourceError(TIMED_OUT);
+    throw error;
+  }
   if (Array.isArray(body.result)) return body.result as Row[];
 
   // Errors arrive as HTTP 200 with a string in `result`.

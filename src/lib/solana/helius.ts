@@ -11,6 +11,14 @@ const PAGE_SIZE = 100;
  */
 const MAX_PAGES = 20;
 const CALL_GAP_MS = 500;
+/** A call that takes longer than this has stalled. Without a limit the page would wait forever. */
+const CALL_TIMEOUT_MS = 20_000;
+/**
+ * Pages are fetched one after another (each needs the previous page's cursor) at about 1.4s each,
+ * so a busy wallet's full 20 pages take close to 30 seconds. Past this budget the report uses
+ * the most recent history it has and says so, rather than keeping the page loading.
+ */
+const HISTORY_BUDGET_MS = 12_000;
 const ASSET_BATCH = 1000;
 
 // One queue for every Helius call in this process, so two wallets loading at
@@ -60,8 +68,9 @@ async function send(url: string, init: RequestInit, attempt = 0): Promise<Respon
   let response: Response;
   try {
     // Not cached by Next: the URL contains the API key. Finished reports are cached in memory instead (see report.ts).
-    response = await fetch(url, { ...init, cache: "no-store" });
-  } catch {
+    response = await fetch(url, { ...init, cache: "no-store", signal: AbortSignal.timeout(CALL_TIMEOUT_MS) });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") throw new SourceError("Helius took too long to respond. Try again in a minute.");
     throw new SourceError("Could not reach Helius. Check your connection and try again.");
   }
   if (response.status === 429) {
@@ -75,6 +84,16 @@ async function send(url: string, init: RequestInit, attempt = 0): Promise<Respon
   return response;
 }
 
+/** Reads a body, turning a timeout while it downloads into an error users can read. */
+async function readJson(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") throw new SourceError("Helius took too long to respond. Try again in a minute.");
+    throw error;
+  }
+}
+
 /** Pages through a wallet's transactions, newest first, up to the cap. */
 export async function fetchTransactions(address: string): Promise<{ transactions: HeliusTransaction[]; truncated: boolean }> {
   const key = apiKey();
@@ -82,6 +101,7 @@ export async function fetchTransactions(address: string): Promise<{ transactions
   const seen = new Set<string>();
   let before: string | undefined;
   let more = false;
+  const started = Date.now();
 
   for (let page = 1; page <= MAX_PAGES; page++) {
     // balanceChanged includes activity on the wallet's token accounts, such as tokens
@@ -92,7 +112,7 @@ export async function fetchTransactions(address: string): Promise<{ transactions
     const response = await send(`${API}/addresses/${address}/transactions?${query}`, { headers: { accept: "application/json" } });
     if (!response.ok) throw new SourceError(`Helius could not return this wallet's history (${response.status}).`);
 
-    const body = (await response.json()) as unknown;
+    const body = (await readJson(response)) as unknown;
     if (!Array.isArray(body)) throw new SourceError("Helius returned an unexpected response for this wallet.");
 
     const fresh = (body as HeliusTransaction[]).filter((tx) => tx?.signature && !seen.has(tx.signature));
@@ -101,7 +121,7 @@ export async function fetchTransactions(address: string): Promise<{ transactions
 
     // A page with nothing new means the cursor was not honoured, so stop instead of looping.
     more = body.length >= PAGE_SIZE && fresh.length > 0;
-    if (!more) break;
+    if (!more || Date.now() - started > HISTORY_BUDGET_MS) break;
     before = body[body.length - 1].signature;
   }
 
@@ -132,7 +152,7 @@ export async function fetchSymbols(mints: string[]): Promise<Map<string, string>
         body: JSON.stringify({ jsonrpc: "2.0", id: "neurox", method: "getAssetBatch", params: { ids } }),
       });
       if (!response.ok) continue;
-      const body = (await response.json()) as { result?: (Asset | null)[] };
+      const body = (await readJson(response)) as { result?: (Asset | null)[] };
       for (const asset of body.result ?? []) {
         const symbol = (asset?.token_info?.symbol || asset?.content?.metadata?.symbol || "").trim();
         if (asset?.id && symbol) symbols.set(asset.id, symbol);

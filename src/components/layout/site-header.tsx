@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Socials } from "@/components/brand/socials";
 import styles from "./layout.module.css";
 
 export function SiteHeader() {
@@ -20,8 +21,9 @@ export function SiteHeader() {
             Journal
           </Link>
           <Link href="/demo" className={styles.navLink}>
-            Sample report
+            Sample<span className={styles.wide}> report</span>
           </Link>
+          <Socials variant="plain" className={styles.headerSocials} />
         </nav>
       </div>
     </header>

@@ -34,8 +34,8 @@
   border: 1px solid var(--border);
   font-size: 14px;
 }
-.notice[data-tone="info"] { background: var(--accent-soft); border-color: rgb(133 146 255 / 0.25); color: var(--text-2); }
-.notice[data-tone="warn"] { background: var(--caution-soft); border-color: rgb(242 184 75 / 0.25); color: var(--text-2); }
+.notice[data-tone="info"] { background: var(--accent-soft); border-color: rgb(31 139 255 / 0.25); color: var(--text-2); }
+.notice[data-tone="warn"] { background: var(--caution-soft); border-color: rgb(255 192 92 / 0.25); color: var(--text-2); }
 
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 
@@ -53,12 +53,14 @@
 
 .twoCol { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; }
 
+/* Glass panel: a faint vertical gradient, blue hairline and an inner top highlight. */
 .card {
   min-width: 0;
   padding: 22px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgb(18 25 38 / 0.75), rgb(10 14 21 / 0.75));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
 .cardHead { margin-bottom: 18px; }
@@ -258,6 +260,9 @@
   .card { padding: 18px; }
   .stat { padding: 16px; }
 }
+
+/* Multi-wallet breakdown */
+.failedList { display: grid; gap: 6px; margin: 14px 0 0; padding: 12px 14px; list-style: none; border-radius: var(--radius-sm); background: var(--caution-soft); color: var(--text-2); font-size: 13.5px; }
 
 /* Holding, risk and stock sections */
 .miniKpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }

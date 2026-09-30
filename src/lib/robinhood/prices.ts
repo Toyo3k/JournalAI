@@ -51,9 +51,10 @@ export async function fetchUsdHistory(coinId: string, symbol: string, fromMs: nu
   try {
     response = await fetch(
       `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart/range?vs_currency=usd&from=${from}&to=${to}`,
-      { headers, next: { revalidate: 3600 } },
+      { headers, next: { revalidate: 3600 }, signal: AbortSignal.timeout(15_000) },
     );
   } catch {
+    // Includes a timeout: a stalled price call would otherwise keep the page loading forever.
     throw new SourceError(`Could not fetch ${symbol} prices needed to value this wallet's swaps.`);
   }
   if (response.status === 429) {

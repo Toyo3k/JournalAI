@@ -1,0 +1,48 @@
+.explorer { position: relative; touch-action: pan-y; cursor: crosshair; border-radius: 10px; }
+.explorer:focus-visible { outline: 2px solid var(--cyan); outline-offset: 6px; }
+
+.crosshair {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: linear-gradient(180deg, transparent, rgb(95 216 255 / 0.55) 12%, rgb(95 216 255 / 0.55) 88%, transparent);
+  pointer-events: none;
+}
+
+.tip {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  gap: 4px;
+  min-width: 190px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgb(95 216 255 / 0.3);
+  background: rgb(10 14 21 / 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px -12px rgb(0 0 0 / 0.9), 0 0 24px -12px rgb(31 139 255 / 0.8);
+  font-size: 13px;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 14px));
+  animation: tipIn 0.12s ease-out;
+}
+.tip[data-side="left"] { transform: translate(calc(-100% - 14px), -50%); }
+.tip[data-side="right"] { transform: translate(14px, -50%); }
+.tip[data-side="center"][data-v="below"] { transform: translate(-50%, 14px); }
+@keyframes tipIn { from { opacity: 0; } }
+
+.tipDate { color: var(--muted); font-size: 12px; }
+.tipRow { display: flex; justify-content: space-between; gap: 18px; color: var(--text-2); }
+/* Colour comes from the value's own class (pos, neg or plain), so none is set here to avoid out-ranking it. */
+.tipRow b { font-weight: 600; }
+.plain { color: var(--text); }
+
+.tipLayer { position: relative; }
+.tipLayer [data-tip] { cursor: pointer; transition: stroke 0.1s; }
+.tipLayer [data-tip]:hover { stroke: var(--text); stroke-width: 1.5; }
+.cellTip { min-width: 0; white-space: nowrap; transform: translate(-50%, calc(-100% - 8px)); }
+.cellTip[data-side="left"] { transform: translate(calc(-100% + 8px), calc(-100% - 8px)); }
+.cellTip[data-side="right"] { transform: translate(-8px, calc(-100% - 8px)); }
+.cellTip b { font-size: 15px; font-weight: 600; }
+.tipDetail { color: var(--muted); font-size: 12px; }

@@ -113,7 +113,7 @@ export interface Subject {
   id: string;
   /** Human-readable form, shortened for addresses and prefixed with @ for handles. */
   label: string;
-  kind: "address" | "handle";
+  kind: "address" | "handle" | "portfolio";
 }
 
 export interface HoldingStats {
@@ -180,9 +180,58 @@ export interface StockContext {
   tokens: StockTokenStat[];
 }
 
+/** One point per closed trade, for the interactive equity chart. */
+export interface TradePoint {
+  t: number;
+  /** Running realized P&L after this trade, every fee included, so the last point equals net P&L. */
+  v: number;
+  /** This trade's own P&L. */
+  pnl: number;
+  coin: string;
+  /** Distance below the previous high at this point. Zero or negative. */
+  drawdown: number;
+}
+
+export interface DayCell {
+  /** UTC midnight of the day. */
+  t: number;
+  pnl: number;
+  trades: number;
+}
+
+export interface HourCell {
+  pnl: number;
+  trades: number;
+}
+
+export interface Visuals {
+  /** Thinned to a chartable size for very active wallets; the final point is always kept. */
+  series: TradePoint[];
+  /** Calendar days from the Monday on or before the first shown day. */
+  calendar: DayCell[];
+  /** True when the calendar only covers the most recent year of a longer history. */
+  calendarClipped: boolean;
+  /** [weekday, Monday first][hour, UTC] */
+  hourWeekday: HourCell[][];
+}
+
+export interface SubScore {
+  key: "edge" | "risk" | "discipline";
+  label: string;
+  value: number;
+  blurb: string;
+}
+
+export interface NeuroScore {
+  value: number;
+  parts: SubScore[];
+  /** Too few trades for the score to mean much. */
+  lowConfidence: boolean;
+}
+
 export interface WalletReport {
   subject: Subject;
-  source: "robinhood" | "solana" | "demo" | "journal";
+  source: "robinhood" | "solana" | "demo" | "journal" | "portfolio";
   capabilities: Capabilities;
   /** Source-specific caveats worth showing next to the numbers. */
   notes: string[];
@@ -203,4 +252,10 @@ export interface WalletReport {
   risk: RiskStats | null;
   /** Null when no Robinhood stock tokens were traded, or stocks could not be identified. */
   stocks: StockContext | null;
+  /** One-sentence summary of the result and the main habits behind it. Empty when there are no trades. */
+  verdict: string;
+  /** Null when there are no closed trades. */
+  score: NeuroScore | null;
+  /** Null when there are no closed trades. */
+  visuals: Visuals | null;
 }

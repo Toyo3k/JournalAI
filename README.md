@@ -73,8 +73,40 @@ because it only covers about two months.
 | `pnpm typecheck` | TypeScript, no emit        |
 | `pnpm test`      | Unit tests (Vitest)        |
 
-`COINGECKO_API_KEY` is optional and raises the rate limit on the ETH/USD and SOL/USD prices used to value swaps. See
+`COINGECKO_API_KEY` is optional but recommended. It raises the rate limit on the ETH/USD and SOL/USD prices used to
+value swaps, and lets the fumble check look at 12 tokens instead of 4 (see below). A free demo key is enough. See
 `.env.example`.
+
+## Multi-wallet reports
+
+Paste several addresses into the form (separated by commas, spaces or new lines) and they become chips, each labelled
+with the chain detected from its format. One address opens `/wallet/[address]`. Two or more open
+`/portfolio?w=...&w=...`, a combined report across up to 5 wallets on any mix of Robinhood Chain and Solana.
+
+- Each wallet loads through the same cache as its own report, and their trades are merged into one report with a
+  per-wallet breakdown table. Order ids are prefixed per wallet, so trades from different wallets never merge.
+- A wallet that fails (a missing key, a rate limit) is left out with the reason shown. The page only errors when no
+  wallet loads.
+- Notes every wallet shares are shown once. Other notes are prefixed with the wallet they belong to.
+
+## Fumble check
+
+Every wallet, multi-wallet and sample report has a **Fumbles** section. For each token you sold, it compares the price
+you got with the highest price the token reached after that sale ("left on the table") and with today's price.
+Tokens now worth less than you sold them for are listed as **good exits**.
+
+- Prices come from GeckoTerminal's on-chain DEX data (`src/lib/prices/geckoterminal.ts`), which covers Robinhood
+  Chain and Solana pools, memecoins included. Each token uses its most liquid pool, with hourly candles when the first
+  sale is within 40 days and daily candles before that.
+- Only candles that start at or after a sale count toward its peak, so a high earlier in the same hour is never held
+  against you. The maths is in `src/lib/analytics/fumbles.ts`.
+- The biggest sold tokens by USD are checked: 12 with `COINGECKO_API_KEY` (CoinGecko's keyed copy of the same API, 30
+  calls a minute), or 4 without (GeckoTerminal's public API allows only about 5 calls a minute in practice). Every
+  call goes through one shared rate limiter. After a 429 it backs off for 30 seconds instead of retrying, because
+  refused calls count against the quota too.
+- The section streams in after the rest of the report, so it never slows the page. If the price service is busy, it
+  shows what it could check and asks you to reload in a minute. Candles are cached (15 minutes hourly, 6 hours daily).
+- The sample report uses generated price histories and says so.
 
 ## Wallet reports
 
@@ -118,11 +150,12 @@ Robinhood Chain. Differences worth knowing:
 ## Private journal
 
 `/journal` is a local-first trade journal that needs no wallet or account. Everything is stored in your browser and
-never uploaded.
+never uploaded. It is built for memecoins, so a trade is a buy then a sell: there is no long or short side.
 
 - **Log trades** with realized P&L, optional size, setup, emotion at entry, rule adherence, notes and close time.
-- **Import a CSV.** Only a ticker and a realized P&L column are required. Side, size, setup, emotion, rules, notes
-  and date are picked up when present, under common header names (for example `Net P&L`, `Strategy`, `Closed At`).
+- **Import a CSV.** Only a ticker and a realized P&L column are required. Size, setup, emotion, rules, notes and date
+  are picked up when present, under common header names (for example `Net P&L`, `Strategy`, `Closed At`). A side or
+  direction column is ignored. Entries saved while the journal still had long/short load as before, without it.
 - **Behaviour analysis** compares results by emotion, setup and plan adherence, and turns the differences into
   insights such as "Breaking the plan costs you".
 - **Report periods** for the last 7 days, 30 days or all time, plus **Print report** for a clean light-themed copy.
@@ -135,8 +168,9 @@ charts work on them too.
 ```
 src/
   app/                    Routes only
-    page.tsx              Landing page with the address form
+    page.tsx              Landing page with the multi-wallet form and a live sample preview
     wallet/[address]/     Wallet report (page, loading, error)
+    portfolio/            Combined report across several wallets
     journal/              Private local journal
     compare/              Side by side comparison of two wallets
     demo/                 Report for generated sample data
@@ -151,10 +185,12 @@ src/
   lib/
     robinhood/            Etherscan client, USD prices, swap reconstruction, stock token registry
     solana/               Helius client and Solana balance changes
+    prices/               GeckoTerminal token prices and candles for the fumble check
     analytics/            Fills -> trades -> metrics -> insights, plus holding, risk, stock context and comparison
     journal/              Entry types, storage, CSV parser, behaviour patterns
     demo/                 Deterministic sample data generator
-    report.ts             Loads a wallet or the demo into a WalletReport
+    report.ts             Loads a wallet, several wallets or the demo into a WalletReport
+    fumbles.ts            Loads the fumble check for a set of wallets, or for the demo
     format.ts, address.ts Helpers
 ```
 
